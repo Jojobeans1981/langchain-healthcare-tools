@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "langchain-healthcare-tools"
+version = "0.1.0"
+description = "Production-Ready Healthcare AI Agent System integrating with OpenEMR"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Joe Panetta", email = "joe@agentforge.dev" },
+]
+
+dependencies = [
+    "langchain>=0.3",
+    "langchain-google-genai>=2.0",
+    "langchain-groq>=0.2",
+    "langchain-community>=0.3",
+    "langgraph>=0.2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "streamlit>=1.41",
+    "httpx>=0.28",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "langsmith>=0.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-mock>=3.14",
+    "ruff>=0.8",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*", "evals*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests", "evals"]
