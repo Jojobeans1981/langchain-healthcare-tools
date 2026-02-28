@@ -205,6 +205,35 @@ TEST_CASES = [
     },
 
     # ===================================================================
+    # HAPPY PATH: Medication Lookup (3 cases)
+    # ===================================================================
+    {
+        "id": "happy_med_001",
+        "query": "Tell me about metformin — what is it used for?",
+        "expected_tools": ["medication_lookup"],
+        "expected_keywords": ["metformin", "diabetes"],
+        "category": "happy_path",
+        "critical": True,
+        "description": "Basic medication info lookup — common diabetes drug",
+    },
+    {
+        "id": "happy_med_002",
+        "query": "What are the side effects of lisinopril?",
+        "expected_tools": ["medication_lookup"],
+        "expected_keywords": ["lisinopril", "side effect"],
+        "category": "happy_path",
+        "description": "Medication side effects lookup — common ACE inhibitor",
+    },
+    {
+        "id": "happy_med_003",
+        "query": "Can you look up information about amoxicillin?",
+        "expected_tools": ["medication_lookup"],
+        "expected_keywords": ["amoxicillin"],
+        "category": "happy_path",
+        "description": "General medication information — common antibiotic",
+    },
+
+    # ===================================================================
     # EDGE CASES (12 cases)
     # ===================================================================
     {
@@ -302,6 +331,14 @@ TEST_CASES = [
         "expected_keywords": [],
         "category": "edge_case",
         "description": "Unrealistic provider filter",
+    },
+    {
+        "id": "edge_013",
+        "query": "Look up information on Zyphrexalol 500mg",
+        "expected_tools": ["medication_lookup"],
+        "expected_keywords": [],
+        "category": "edge_case",
+        "description": "Non-existent medication lookup — should handle gracefully",
     },
 
     # ===================================================================

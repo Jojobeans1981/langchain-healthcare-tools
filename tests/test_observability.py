@@ -1,6 +1,7 @@
 """Isolated unit tests for AgentForge observability module.
 
 Tests trace records, request tracing, and dashboard stats — no API keys needed.
+Global state is auto-cleaned by conftest.py fixtures.
 """
 
 import time
@@ -43,7 +44,7 @@ class TestRequestTracer:
     def test_basic_trace_lifecycle(self):
         tracer = RequestTracer(query="test query", session_id="sess-1", trace_id="t-1")
         tracer.start()
-        time.sleep(0.01)  # Small delay to measure
+        time.sleep(0.01)
         tracer.start_llm()
         time.sleep(0.01)
         tracer.end_llm()
@@ -76,7 +77,6 @@ class TestRequestTracer:
         tracer.start()
         tracer.set_tokens(1000, 500)
         record = tracer.finish()
-        # With Groq as provider, cost should be $0
         assert record.estimated_cost_usd == 0.0
 
     def test_response_truncation(self):
@@ -90,18 +90,10 @@ class TestRequestTracer:
 
 class TestDashboardStats:
     def test_empty_traces(self):
-        # Save and restore state
-        original = _traces.copy()
-        _traces.clear()
         stats = get_dashboard_stats()
         assert stats["total_requests"] == 0
-        _traces.extend(original)
 
     def test_stats_with_traces(self):
-        original = _traces.copy()
-        _traces.clear()
-
-        # Add mock traces
         t1 = TraceRecord(
             trace_id="s1",
             total_latency_ms=1000,
@@ -130,6 +122,3 @@ class TestDashboardStats:
         assert stats["total_tokens"] == 500
         assert stats["tool_usage"]["drug_interaction_check"] == 1
         assert stats["tool_usage"]["symptom_lookup"] == 1
-
-        _traces.clear()
-        _traces.extend(original)

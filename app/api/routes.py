@@ -86,7 +86,7 @@ async def chat_stream_endpoint(request: ChatRequest):
 
 
 class SessionRequest(BaseModel):
-    session_id: str
+    session_id: str = Field(..., min_length=1, max_length=128)
 
 
 @router.post("/clear-session")
@@ -97,10 +97,10 @@ async def clear_session_endpoint(request: SessionRequest):
 
 
 class FeedbackRequest(BaseModel):
-    trace_id: str = Field(..., description="Trace ID of the response being rated")
-    session_id: str = Field(default="", description="Session ID")
+    trace_id: str = Field(..., max_length=128, description="Trace ID of the response being rated")
+    session_id: str = Field(default="", max_length=128, description="Session ID")
     rating: str = Field(..., pattern="^(up|down)$", description="'up' or 'down'")
-    correction: str = Field(default="", description="Optional correction text")
+    correction: str = Field(default="", max_length=5000, description="Optional correction text")
 
 
 @router.post("/feedback")

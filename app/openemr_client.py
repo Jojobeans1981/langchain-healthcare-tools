@@ -35,7 +35,7 @@ class OpenEMRClient:
         if self._available is not None:
             return self._available
         try:
-            with httpx.Client(verify=False, timeout=5.0) as client:
+            with httpx.Client(verify=settings.openemr_verify_ssl, timeout=5.0) as client:
                 resp = client.get(f"{OPENEMR_BASE}/apis/default/api/facility")
                 # 401 means API is up but needs auth — that's fine
                 self._available = resp.status_code in (200, 401, 403)
@@ -47,7 +47,7 @@ class OpenEMRClient:
     def _register_client(self) -> bool:
         """Register an OAuth2 client with OpenEMR (one-time setup)."""
         try:
-            with httpx.Client(verify=False, timeout=10.0) as client:
+            with httpx.Client(verify=settings.openemr_verify_ssl, timeout=10.0) as client:
                 resp = client.post(
                     f"{OPENEMR_BASE}{REGISTRATION_PATH}",
                     json={
@@ -78,7 +78,7 @@ class OpenEMRClient:
             if not self._register_client():
                 return False
         try:
-            with httpx.Client(verify=False, timeout=10.0) as client:
+            with httpx.Client(verify=settings.openemr_verify_ssl, timeout=10.0) as client:
                 resp = client.post(
                     f"{OPENEMR_BASE}{TOKEN_PATH}",
                     data={
@@ -113,7 +113,7 @@ class OpenEMRClient:
         if not self.is_available():
             return None
         try:
-            with httpx.Client(verify=False, timeout=10.0) as client:
+            with httpx.Client(verify=settings.openemr_verify_ssl, timeout=10.0) as client:
                 resp = client.get(
                     f"{OPENEMR_BASE}{API_PATH}{endpoint}",
                     headers=self._get_headers(),

@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     openemr_user: str = "admin"
     openemr_pass: str = "pass"
     openemr_enabled: bool = False
+    openemr_verify_ssl: bool = False  # False for dev (self-signed certs)
+    openemr_redirect_uri: str = "http://localhost:8000/callback"
 
     # LangSmith
     langchain_tracing_v2: bool = False

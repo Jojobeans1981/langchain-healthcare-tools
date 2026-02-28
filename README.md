@@ -5,7 +5,7 @@
 [![Tests](https://github.com/Jojobeans1981/langchain-healthcare-tools/actions/workflows/tests.yml/badge.svg)](https://github.com/Jojobeans1981/langchain-healthcare-tools/actions/workflows/tests.yml)
 ![Coverage: 85%](https://img.shields.io/badge/coverage-85%25_safety--critical-brightgreen.svg)
 ![Tools: 9](https://img.shields.io/badge/tools-9_healthcare-orange.svg)
-![Eval Cases: 96](https://img.shields.io/badge/eval_cases-96-blueviolet.svg)
+![Eval Cases: 100](https://img.shields.io/badge/eval_cases-100-blueviolet.svg)
 
 > **Nine tools. Five safeguards. Zero hallucinations.**
 
@@ -38,7 +38,7 @@ pip install -e ".[server,dev]"
 |--------|-------|
 | Healthcare Tools | 9 (drug interaction, symptom, provider, appointment, insurance, medication, watchlist, recall checker, recall scanner) |
 | Unit Tests | 165 passing (tools, verifier, observability, memory, routes, drug recall, confidence fallback) |
-| Eval Test Cases | 96 (21 happy path, 12 edge, 36 adversarial, 11 multi-step, 12 recall, 4 grounding) |
+| Eval Test Cases | 100 (24 happy path, 13 edge, 36 adversarial, 11 multi-step, 12 recall, 4 grounding) |
 | Verification Types | 5 (hallucination, source grounding, confidence, domain, output) |
 | LLM Provider | Groq/Llama 3.3 70B (primary) with Gemini Flash fallback |
 | Cost Per Query | ~$0.00 (Groq free tier) |
@@ -97,12 +97,12 @@ AA = Appointment Avail.  IC = Insurance Coverage  ML = Medication Lookup
 
 | Tool | Data Source | Description |
 |------|------------|-------------|
-| `drug_interaction_check` | NIH RxNorm/RxNav API + 10-pair curated DB | Check interactions between 2+ medications. Severity levels: Low, Moderate, High, Contraindicated |
+| `drug_interaction_check` | NIH RxNorm/RxNav API + 21-pair curated DB | Check interactions between 2+ medications. Severity levels: Low, Moderate, High, Contraindicated |
 | `symptom_lookup` | CDC/NIH/Mayo Clinic curated DB | Map symptoms to possible conditions. 16 emergency keywords trigger immediate escalation |
 | `provider_search` | Mock data + OpenEMR FHIR fallback | Find healthcare providers by specialty. 8 specialties, includes ratings and availability |
 | `appointment_availability` | Mock calendar data | Check appointment slots by specialty and date range |
 | `insurance_coverage_check` | 3 insurance plans (PPO/HMO/Medicare) | Coverage lookup with copays, deductibles, prior auth. 15+ CPT codes per plan |
-| `medication_lookup` | FDA OpenFDA API + 6-drug mock fallback | Drug info: indications, warnings, contraindications, dosage forms, manufacturer |
+| `medication_lookup` | FDA OpenFDA API + 16-drug mock fallback | Drug info: indications, warnings, contraindications, dosage forms, manufacturer |
 | `manage_watchlist` | SQLite (patient_watchlist table) | CRUD for patient medication watchlists. Actions: add, list, remove, update. Soft deletes for audit history |
 | `check_drug_recalls` | FDA openFDA Drug Enforcement API | Check active FDA recalls on any medication by brand or generic name. Returns up to 5 recent recalls |
 | `scan_watchlist_recalls` | SQLite + FDA openFDA API | Cross-reference a patient's entire medication list against FDA recall database in one query |
@@ -184,11 +184,11 @@ python -m pytest tests/ -v
 
 All 165 tests pass in <9 seconds with **zero external dependencies** — no API keys, no Docker, no database.
 
-### Integration Eval Suite (96 test cases, requires live LLM)
+### Integration Eval Suite (100 test cases, requires live LLM)
 
 ```bash
 cd agentforge
-python -m evals.runner              # Run all 96 tests
+python -m evals.runner              # Run all 100 tests
 python -m evals.runner --category adversarial --verbose
 python -m evals.runner --json       # Load from JSON dataset
 ```
@@ -269,6 +269,28 @@ data: {"type": "token", "content": " aspirin"}
 ...
 data: {"type": "done", "content": {"tools_used": [...], "confidence": 0.75, ...}}
 ```
+
+---
+
+## Zero Setup Required — No OpenEMR Seeding Needed
+
+Unlike other OpenEMR integrations, **AgentForge works out of the box with no database seeding, no OpenEMR Docker container, and no manual data setup.** Every tool uses a 3-tier data strategy that guarantees full functionality regardless of environment:
+
+| Tier | Source | When Used |
+| ---- | ------ | --------- |
+| **1. Live OpenEMR** | OpenEMR REST API (OAuth2) | When a running OpenEMR instance is detected — pulls real patient, provider, appointment, and insurance data |
+| **2. Live Public APIs** | FDA OpenFDA + NIH RxNorm | Always — drug lookups, interaction checks, and recall queries hit free federal APIs in real-time (no API keys needed) |
+| **3. Built-in Clinical Data** | Curated mock datasets embedded in tool code | Automatic fallback when OpenEMR and/or public APIs are unreachable |
+
+**How it works in practice:**
+
+- `provider_search` → tries OpenEMR `/api/practitioner` → falls back to 8 built-in providers
+- `medication_lookup` → tries FDA OpenFDA Label API → falls back to 16 curated medications
+- `drug_interaction_check` → tries NIH RxNorm Interaction API → falls back to 21 curated drug pairs
+- `check_drug_recalls` → queries FDA Enforcement API (always live, 99.9% uptime)
+- `symptom_lookup` → 13 symptom categories with conditions, all local (no API needed)
+
+The fallback is seamless and automatic — the user sees the same response format regardless of which tier served the data. Run `docker compose up` and start chatting immediately, or connect to a live OpenEMR instance for real patient data. Either way, all 9 tools work.
 
 ---
 
@@ -372,7 +394,7 @@ agentforge/
     test_confidence_fallback.py  # 6 confidence fallback unit tests
     test_openemr_live.py    # 7 live integration tests (skipped without OPENEMR_ENABLED=true)
   evals/
-    test_cases.py           # 96 eval test case definitions
+    test_cases.py           # 100 eval test case definitions
     runner.py               # Async eval runner with reporting
     healthcare_eval_dataset.json  # Published eval dataset
   ui/
@@ -424,7 +446,7 @@ Tests verify OAuth2 authentication, practitioner/patient queries, and tool-level
 
 ## Healthcare AI Eval Benchmark
 
-AgentForge publishes a **96-case evaluation dataset** for benchmarking healthcare AI agents — the largest open-source healthcare agent eval we're aware of.
+AgentForge publishes a **100-case evaluation dataset** for benchmarking healthcare AI agents — the largest open-source healthcare agent eval we're aware of.
 
 **File:** [`evals/healthcare_eval_dataset.json`](evals/healthcare_eval_dataset.json)
 
@@ -461,7 +483,7 @@ AgentForge is an open source contribution to the OpenEMR ecosystem, adding AI-po
 | Contribution | Description |
 |---|---|
 | **Healthcare Agent Package** | Complete LangGraph-based ReAct agent with 9 domain-specific tools, deployed as a reusable module within OpenEMR (`agentforge/` directory) |
-| **Eval Dataset** | 96 healthcare-specific test cases published at `evals/healthcare_eval_dataset.json` — includes happy path, edge cases, adversarial inputs, multi-step reasoning, FDA recall, and source grounding scenarios for community benchmarking |
+| **Eval Dataset** | 100 healthcare-specific test cases published at `evals/healthcare_eval_dataset.json` — includes happy path, edge cases, adversarial inputs, multi-step reasoning, FDA recall, and source grounding scenarios for community benchmarking |
 | **Verification Framework** | 5-layer response verification system (hallucination detection, source grounding, confidence scoring, domain constraints, output validation) with active content blocking, reusable for any healthcare AI application |
 | **Observability Module** | Custom tracing, latency tracking, token usage, and dashboard stats module (`app/observability.py`) |
 

@@ -123,7 +123,6 @@ async def provider_search(specialty: str = "", name: str = "") -> str:
     # Fall back to mock data
     if not providers:
         source = "AgentForge Provider Directory (Demo Data)"
-        search_lower = (specialty + " " + name).lower()
         providers = [
             p for p in MOCK_PROVIDERS
             if (specialty.lower() in p["specialty"].lower() if specialty else True)

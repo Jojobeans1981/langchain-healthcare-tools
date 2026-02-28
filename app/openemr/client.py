@@ -18,7 +18,7 @@ class OpenEMRClient:
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(timeout=30.0, verify=False)
+            self._client = httpx.AsyncClient(timeout=30.0, verify=settings.openemr_verify_ssl)
         return self._client
 
     async def authenticate(self) -> bool:
@@ -32,7 +32,7 @@ class OpenEMRClient:
                     f"{self.base_url}/oauth2/default/registration",
                     json={
                         "application_type": "private",
-                        "redirect_uris": ["http://localhost:8000/callback"],
+                        "redirect_uris": [settings.openemr_redirect_uri],
                         "client_name": "AgentForge Healthcare Agent",
                         "scope": "openid api:oemr api:fhir",
                     },
@@ -50,8 +50,8 @@ class OpenEMRClient:
                     "grant_type": "password",
                     "client_id": settings.openemr_client_id,
                     "client_secret": settings.openemr_client_secret,
-                    "username": "admin",
-                    "password": "pass",
+                    "username": settings.openemr_user,
+                    "password": settings.openemr_pass,
                     "scope": "openid api:oemr api:fhir",
                 },
             )
