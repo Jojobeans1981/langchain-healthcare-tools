@@ -19,9 +19,6 @@ dependencies = [
     "langchain-groq>=0.2",
     "langchain-community>=0.3",
     "langgraph>=0.2",
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.34",
-    "streamlit>=1.41",
     "httpx>=0.28",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
@@ -30,6 +27,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+server = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "streamlit>=1.41",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",

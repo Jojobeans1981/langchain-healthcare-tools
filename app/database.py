@@ -34,6 +34,12 @@ def init_db(db_path: Path = None):
             UNIQUE(patient_id, medication_name)
         )
     """)
+    # Add last_scanned column if missing (safe for existing DBs)
+    try:
+        conn.execute("ALTER TABLE patient_watchlist ADD COLUMN last_scanned TEXT DEFAULT NULL")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     conn.commit()
     conn.close()
 

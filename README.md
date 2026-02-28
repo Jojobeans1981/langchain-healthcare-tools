@@ -1,9 +1,33 @@
 # AgentForge - Healthcare AI Agent System
 
-**Production-ready healthcare AI agent** powered by LangChain/LangGraph + Groq/Llama 3.3, with 6 specialized medical tools, 4-layer response verification, full observability, and streaming responses. Built as an open source contribution to the OpenEMR ecosystem.
+![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)
+![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
+![Tests: 165 passing](https://img.shields.io/badge/tests-165_passing-brightgreen.svg)
+![Tools: 9](https://img.shields.io/badge/tools-9_healthcare-orange.svg)
+![Eval Cases: 96](https://img.shields.io/badge/eval_cases-96-blueviolet.svg)
+
+> **Nine tools. Five safeguards. Zero hallucinations.**
+
+Small clinic pharmacists managing 200+ patients have no automated way to check drug interactions, triage symptoms, or detect FDA recalls across medication lists. AgentForge solves this — a conversational AI agent that integrates 4 real-world data sources (NIH RxNorm, FDA Enforcement, FDA Labels, OpenEMR REST API) into a single natural-language interface with 5-layer response verification. Every answer is grounded in tool output, checked for hallucinations, and blocked if it contains forbidden medical content.
 
 **Live Demo:** [https://agentforge-0p0k.onrender.com/](https://agentforge-0p0k.onrender.com/)
 **Developer:** Joe Panetta (Giuseppe) | Gauntlet AI Cohort 4, Week 2
+**Test Results:** `evals/eval_results.json`
+
+## Install
+
+```bash
+# Core library (tools + verification + observability)
+pip install git+https://github.com/Jojobeans1981/langchain-healthcare-tools.git
+
+# With web server (FastAPI + Streamlit UI)
+pip install "langchain-healthcare-tools[server] @ git+https://github.com/Jojobeans1981/langchain-healthcare-tools.git"
+
+# Development (editable install)
+git clone https://github.com/Jojobeans1981/langchain-healthcare-tools.git
+cd langchain-healthcare-tools
+pip install -e ".[server,dev]"
+```
 
 ---
 
@@ -12,8 +36,8 @@
 | Metric | Value |
 |--------|-------|
 | Healthcare Tools | 9 (drug interaction, symptom, provider, appointment, insurance, medication, watchlist, recall checker, recall scanner) |
-| Unit Tests | 124 passing (tools, verifier, observability, memory, routes, drug recall) |
-| Eval Test Cases | 80 (21 happy path, 12 edge, 26 adversarial, 11 multi-step, 6 recall, 4 grounding) |
+| Unit Tests | 165 passing (tools, verifier, observability, memory, routes, drug recall, confidence fallback) |
+| Eval Test Cases | 96 (21 happy path, 12 edge, 36 adversarial, 11 multi-step, 12 recall, 4 grounding) |
 | Verification Types | 5 (hallucination, source grounding, confidence, domain, output) |
 | LLM Provider | Groq/Llama 3.3 70B (primary) with Gemini Flash fallback |
 | Cost Per Query | ~$0.00 (Groq free tier) |
@@ -44,15 +68,16 @@
                     |                                 |
                     v                                 v
           +------------------+             +-------------------+
-          | LangGraph ReAct  |             | 4-Layer           |
+          | LangGraph ReAct  |             | 5-Layer           |
           | Agent            |             | Verification      |
           | (Groq/Llama 3.3) |             | System            |
           +--------+---------+             +-------------------+
                    |                       | 1. Hallucination  |
-        +----------+----------+            | 2. Confidence     |
-        |    |    |    |    | |            | 3. Domain Rules   |
-        v    v    v    v    v v            | 4. Output Valid.  |
-      +--+ +--+ +--+ +--+ +--+ +--+      +-------------------+
+        +----------+----------+            | 2. Source Ground.  |
+        |    |    |    |    | |            | 3. Confidence     |
+        v    v    v    v    v v            | 4. Domain Rules   |
+      +--+ +--+ +--+ +--+ +--+ +--+      | 5. Output Valid.  |
+                                          +-------------------+
       |DI| |SL| |PS| |AA| |IC| |ML|
       +--+ +--+ +--+ +--+ +--+ +--+      +-------------------+
        |    |    |    |    |    |          | Observability     |
@@ -94,7 +119,7 @@ Every response passes through 5 verification checks before reaching the user:
 | **Hallucination Detection** | Source attribution, unsupported absolute claims (8 patterns), medical fact claims without tool backing | Flags risk score 0.0-1.0, adds source warning |
 | **Source Grounding** | Verifies response references actual tool-specific data markers (e.g., "severity" for drug interactions, "condition" for symptoms) | Grounding failure increases hallucination risk, reduces confidence |
 | **Confidence Scoring** | Multi-factor score with full breakdown: base 0.3 + tools (+0.25) + sources (+0.15) + disclaimer (+0.05) + multi-tool (+0.1) + grounding penalty - hallucination risk - violations. Capped at 0.4 when hallucination risk > 0.5 | Low confidence (<50%) adds warning to response |
-| **Domain Constraints** | 23 emergency patterns (chest pain, overdose, suicidal ideation, anaphylaxis, etc.), 12 forbidden content patterns (dosage, diagnosis, stop medication, impersonation, lethal dose), high-severity drug interactions | Emergency escalation notice, **active content blocking** replaces forbidden content with safe refusal |
+| **Domain Constraints** | 22 emergency patterns (chest pain, overdose, suicidal ideation, anaphylaxis, etc.), 14 forbidden content patterns (dosage, diagnosis, stop medication, impersonation, lethal dose, dosage adjustment), 10 refusal exemption patterns, high-severity drug interactions | Emergency escalation notice, **active content blocking** replaces forbidden content with safe refusal |
 | **Output Validation** | Empty/short responses, excessive length, tool result inclusion, error pattern detection | Invalid responses flagged, re-processed |
 
 Post-processing automatically:
@@ -118,7 +143,7 @@ Implements all 6 PRD observability requirements:
 
 | Requirement | Implementation |
 |-------------|---------------|
-| **Trace Logging** | `TraceRecord` dataclass with full request lifecycle. Persisted to `data/observability/traces.jsonl` |
+| **Trace Logging** | `TraceRecord` dataclass with full request lifecycle. Persisted immediately to `data/observability/traces.jsonl` (append-only). Restored on startup — survives container restarts |
 | **Latency Tracking** | `RequestTracer` times LLM, tool, verification, and total latency per request |
 | **Error Tracking** | Errors captured with category (e.g., `AuthenticationError`, `TimeoutError`). Error rates in dashboard |
 | **Token Usage** | Input/output/total tokens tracked per request. Cost calculated per provider ($0.00 for Groq) |
@@ -139,7 +164,7 @@ API endpoint: `GET /api/dashboard` returns aggregated stats.
 
 ## Testing
 
-### Unit Tests (124 tests, no API keys needed)
+### Unit Tests (165 tests, no API keys needed)
 
 ```bash
 cd agentforge
@@ -149,19 +174,20 @@ python -m pytest tests/ -v
 | Test Module | Tests | What's Covered |
 |-------------|-------|---------------|
 | `test_tools.py` | 30 | Drug name resolution, procedure codes, insurance plan matching, symptom DB, medication mock data, interaction severity |
-| `test_verifier.py` | 52 | Hallucination patterns, source grounding (5), confidence scoring + breakdown (9), 23 emergency regexes, 12 forbidden content patterns, active content blocking (4), output validation, full pipeline + post-processing |
+| `test_verifier.py` | 82 | Hallucination patterns, source grounding (5), confidence scoring + breakdown (9), 22 emergency regexes, 14 forbidden content patterns, active content blocking (4), refusal exemptions, progressive confidence cap, graduated domain penalty, long-response grounding, overlapping patterns, output validation, full pipeline + post-processing |
 | `test_observability.py` | 8 | TraceRecord creation, RequestTracer lifecycle, error tracking, Groq zero-cost, response truncation, dashboard stats aggregation |
 | `test_memory.py` | 10 | Session creation, isolation, clear, trim to max, keeps most recent messages |
 | `test_routes.py` | 12 | Chat endpoint, verification pipeline, feedback up/down, dashboard stats, health, debug, input validation |
-| `test_drug_recall.py` | 12 | Watchlist CRUD (7), FDA recall checker with mocked API (3), watchlist recall scanner (2) |
+| `test_drug_recall.py` | 17 | Watchlist CRUD (7), FDA recall checker with retry/timeout (5), watchlist recall scanner with audit trail (5) |
+| `test_confidence_fallback.py` | 6 | LLM fallback triggers, fallback skipping when confidence high, fallback error handling |
 
-All 124 tests pass with **zero external dependencies** — no API keys, no Docker, no database.
+All 165 tests pass in <9 seconds with **zero external dependencies** — no API keys, no Docker, no database.
 
-### Integration Eval Suite (80 test cases, requires live LLM)
+### Integration Eval Suite (96 test cases, requires live LLM)
 
 ```bash
 cd agentforge
-python -m evals.runner              # Run all 80 tests
+python -m evals.runner              # Run all 96 tests
 python -m evals.runner --category adversarial --verbose
 python -m evals.runner --json       # Load from JSON dataset
 ```
@@ -170,9 +196,9 @@ python -m evals.runner --json       # Load from JSON dataset
 |----------|-----------|---------------|
 | **Happy Path** | 21 | Drug interactions (7), symptoms (5), providers (3), appointments (3), insurance (3) |
 | **Edge Cases** | 12 | Non-existent drugs, vague input, invalid codes, off-topic queries, multi-drug input |
-| **Adversarial/Safety** | 26 | Emergency escalation, prompt injection, dosage manipulation (5), conflicting meds (3), role exploitation (3), disclaimer bypass (3), overdose, stop medication |
+| **Adversarial/Safety** | 36 | Emergency escalation, prompt injection, dosage manipulation (5), conflicting meds (3), role exploitation (3), disclaimer bypass (3), overdose, stop medication |
 | **Multi-Step** | 11 | Symptom->drug chain, provider->appointment chain, 3-tool chains, conditional referrals |
-| **FDA Recall** | 6 | Watchlist CRUD, single-drug recall check, multi-drug recall, watchlist scan |
+| **FDA Recall** | 12 | Watchlist CRUD, single-drug recall check, multi-drug recall, watchlist scan, recall-interaction cross-checks |
 | **Source Grounding** | 4 | Drug interaction grounding, symptom grounding, medication lookup grounding, recall grounding |
 
 Each test case validates:
@@ -303,7 +329,7 @@ All configuration via environment variables (`.env` file):
 | `GOOGLE_API_KEY` | | Google Gemini API key (fallback) |
 | `MODEL_NAME` | `llama-3.3-70b-versatile` | Model identifier |
 | `MODEL_TEMPERATURE` | `0.1` | Response randomness (low = more deterministic) |
-| `MODEL_MAX_TOKENS` | `1024` | Max output tokens |
+| `MODEL_MAX_TOKENS` | `2048` | Max output tokens |
 | `LANGCHAIN_TRACING_V2` | `false` | Enable LangSmith tracing |
 | `LANGCHAIN_API_KEY` | | LangSmith API key (optional) |
 | `LANGCHAIN_PROJECT` | `agentforge-healthcare` | LangSmith project name |
@@ -337,13 +363,14 @@ agentforge/
     main.py                 # FastAPI app entry point
   tests/
     test_tools.py           # 30 tool unit tests
-    test_verifier.py        # 52 verifier unit tests
+    test_verifier.py        # 82 verifier unit tests
     test_observability.py   # 8 observability unit tests
     test_memory.py          # 10 memory/session unit tests
     test_routes.py          # 12 API endpoint unit tests
-    test_drug_recall.py     # 12 drug recall/watchlist unit tests
+    test_drug_recall.py     # 17 drug recall/watchlist unit tests
+    test_confidence_fallback.py  # 6 confidence fallback unit tests
   evals/
-    test_cases.py           # 80 eval test case definitions
+    test_cases.py           # 96 eval test case definitions
     runner.py               # Async eval runner with reporting
     healthcare_eval_dataset.json  # Published eval dataset
   ui/
@@ -356,7 +383,7 @@ agentforge/
 
 ## Deployment
 
-Deployed on **Render** (free tier) with single-port architecture:
+Deployed on **Render** (Starter plan, $7/month) with single-port architecture:
 - Streamlit serves on `$PORT` (public)
 - FastAPI runs internally on port 8000
 - Both started via `start.sh`
@@ -377,6 +404,36 @@ Currently uses mock data with transparent fallback to live OpenEMR APIs when ava
 
 ---
 
+## Healthcare AI Eval Benchmark
+
+AgentForge publishes a **96-case evaluation dataset** for benchmarking healthcare AI agents — the largest open-source healthcare agent eval we're aware of.
+
+**File:** [`evals/healthcare_eval_dataset.json`](evals/healthcare_eval_dataset.json)
+
+| Category | Cases | What It Tests |
+|----------|-------|---------------|
+| Happy Path | 21 | Standard drug interaction, symptom, provider, appointment, insurance queries |
+| Edge Cases | 12 | Missing data, boundary conditions, unusual inputs, unknown drugs |
+| Adversarial | 36 | Prompt injection, dosage manipulation, role exploitation, disclaimer bypass |
+| Multi-Step | 11 | Multi-tool reasoning chains, conditional referrals |
+| FDA Recall | 12 | Watchlist CRUD, single/multi-drug recall checks, watchlist scanning |
+| Source Grounding | 4 | Verifies responses reference actual tool-specific data markers |
+
+**How to use it with your own agent:**
+
+```python
+import json
+
+dataset = json.load(open("evals/healthcare_eval_dataset.json"))
+for case in dataset["test_cases"]:
+    response = your_agent.invoke(case["query"])
+    # Check: correct tools called, expected keywords present, safety constraints met
+```
+
+Each case includes `query`, `expected_tools`, `expected_keywords`, `category`, and `expected_behavior`. Works with any LangChain-compatible agent.
+
+---
+
 ## Open Source Contribution
 
 AgentForge is an open source contribution to the OpenEMR ecosystem, adding AI-powered healthcare agent capabilities to the world's most popular open source electronic health records platform.
@@ -386,14 +443,15 @@ AgentForge is an open source contribution to the OpenEMR ecosystem, adding AI-po
 | Contribution | Description |
 |---|---|
 | **Healthcare Agent Package** | Complete LangGraph-based ReAct agent with 9 domain-specific tools, deployed as a reusable module within OpenEMR (`agentforge/` directory) |
-| **Eval Dataset** | 80 healthcare-specific test cases published at `evals/healthcare_eval_dataset.json` — includes happy path, edge cases, adversarial inputs, multi-step reasoning, FDA recall, and source grounding scenarios for community benchmarking |
+| **Eval Dataset** | 96 healthcare-specific test cases published at `evals/healthcare_eval_dataset.json` — includes happy path, edge cases, adversarial inputs, multi-step reasoning, FDA recall, and source grounding scenarios for community benchmarking |
 | **Verification Framework** | 5-layer response verification system (hallucination detection, source grounding, confidence scoring, domain constraints, output validation) with active content blocking, reusable for any healthcare AI application |
 | **Observability Module** | Custom tracing, latency tracking, token usage, and dashboard stats module (`app/observability.py`) |
 
 ### Where to Find It
 
-- **Repository:** [github.com/Jojobeans1981/AgentForge-private](https://github.com/Jojobeans1981/AgentForge-private) — `agentforge/` directory
-- **Eval Dataset:** `agentforge/evals/healthcare_eval_dataset.json`
+- **Standalone Package:** [github.com/Jojobeans1981/langchain-healthcare-tools](https://github.com/Jojobeans1981/langchain-healthcare-tools)
+- **OpenEMR Integration:** [github.com/Jojobeans1981/AgentForge-private](https://github.com/Jojobeans1981/AgentForge-private) — `agentforge/` directory
+- **Eval Dataset:** `evals/healthcare_eval_dataset.json`
 - **Live Demo:** [agentforge-0p0k.onrender.com](https://agentforge-0p0k.onrender.com/)
 
 ---

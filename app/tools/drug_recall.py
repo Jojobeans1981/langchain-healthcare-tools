@@ -5,6 +5,7 @@ and real-time FDA drug recall checking via the openFDA API.
 """
 
 import logging
+import time
 from datetime import datetime, timezone
 
 import httpx
@@ -75,7 +76,7 @@ def _watchlist_list(patient_id: str) -> str:
     conn = get_db()
     try:
         rows = conn.execute(
-            "SELECT medication_name, added_date, notes FROM patient_watchlist WHERE patient_id = ? AND status = 'active' ORDER BY added_date",
+            "SELECT medication_name, added_date, notes, last_scanned FROM patient_watchlist WHERE patient_id = ? AND status = 'active' ORDER BY added_date",
             (patient_id,),
         ).fetchall()
         if not rows:
@@ -85,6 +86,11 @@ def _watchlist_list(patient_id: str) -> str:
             entry = f"- {row['medication_name']}"
             if row["notes"]:
                 entry += f" (notes: {row['notes']})"
+            scanned = row["last_scanned"]
+            if scanned:
+                entry += f" [last scanned: {scanned}]"
+            else:
+                entry += " [never scanned]"
             lines.append(entry)
         return "\n".join(lines)
     finally:
@@ -130,48 +136,63 @@ def _watchlist_update(patient_id: str, medication_name: str, notes: str) -> str:
 # ===================================================================
 
 
-def _fetch_fda_recalls(drug_name: str) -> list[dict]:
-    """Fetch recall data from the FDA openFDA API for a given drug name."""
+def _fetch_fda_recalls(drug_name: str, max_retries: int = 3) -> list[dict]:
+    """Fetch recall data from the FDA openFDA API for a given drug name.
+
+    Uses exponential backoff (0.5s, 1s, 2s) on transient failures.
+    """
     search_term = drug_name.strip()
-    params = {
-        "search": f'openfda.brand_name:"{search_term}"+OR+openfda.generic_name:"{search_term}"',
-        "limit": 5,
-    }
-    try:
-        with httpx.Client(timeout=10.0) as client:
-            resp = client.get(FDA_RECALL_URL, params=params)
-            if resp.status_code == 404:
-                return []
-            resp.raise_for_status()
-            data = resp.json()
-            results = data.get("results", [])
-            recalls = []
-            for r in results:
-                classification = r.get("classification", "Unknown")
-                recalls.append({
-                    "recall_number": r.get("recall_number", "N/A"),
-                    "reason": r.get("reason_for_recall", "No reason provided"),
-                    "classification": classification,
-                    "severity": CLASSIFICATION_MAP.get(classification, "Unknown severity"),
-                    "status": r.get("status", "Unknown"),
-                    "voluntary_mandated": r.get("voluntary_mandated", "Unknown"),
-                    "distribution": r.get("distribution_pattern", "Unknown"),
-                })
-            return recalls
-    except httpx.HTTPStatusError as e:
-        logger.warning("FDA API HTTP error for '%s': %s", drug_name, e)
-        return []
-    except Exception as e:
-        logger.warning("FDA API unavailable for '%s': %s", drug_name, e)
-        return []
+    # Build URL manually — httpx encodes + as %2B which breaks the FDA API's OR operator
+    url = (
+        f'{FDA_RECALL_URL}'
+        f'?search=openfda.brand_name:"{search_term}"+OR+openfda.generic_name:"{search_term}"'
+        f'&limit=5'
+    )
+    for attempt in range(max_retries):
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                resp = client.get(url)
+                if resp.status_code == 404:
+                    return []
+                resp.raise_for_status()
+                data = resp.json()
+                results = data.get("results", [])
+                recalls = []
+                for r in results:
+                    classification = r.get("classification", "Unknown")
+                    recalls.append({
+                        "recall_number": r.get("recall_number", "N/A"),
+                        "reason": r.get("reason_for_recall", "No reason provided"),
+                        "classification": classification,
+                        "severity": CLASSIFICATION_MAP.get(classification, "Unknown severity"),
+                        "status": r.get("status", "Unknown"),
+                        "voluntary_mandated": r.get("voluntary_mandated", "Unknown"),
+                        "distribution": r.get("distribution_pattern", "Unknown"),
+                    })
+                return recalls
+        except httpx.HTTPStatusError as e:
+            logger.warning("FDA API HTTP error for '%s': %s", drug_name, e)
+            return []  # Non-transient — don't retry
+        except (httpx.ConnectError, httpx.TimeoutException) as e:
+            if attempt < max_retries - 1:
+                backoff = 0.5 * (2 ** attempt)  # 0.5s, 1s, 2s
+                logger.info("FDA API retry %d/%d for '%s' (backoff %.1fs)", attempt + 1, max_retries, drug_name, backoff)
+                time.sleep(backoff)
+                continue
+            logger.warning("FDA API failed after %d retries for '%s': %s", max_retries, drug_name, e)
+            return []
+        except Exception as e:
+            logger.warning("FDA API unavailable for '%s': %s", drug_name, e)
+            return []
+    return []  # Should not reach here, but safety net
 
 
 @tool
 def check_drug_recalls(drug_name: str) -> str:
-    """Check the FDA database for active recalls on a specific drug. Use when users ask about drug recalls, safety alerts, or FDA enforcement actions for a medication.
+    """Query the FDA openFDA enforcement API for active recall actions on a medication. This tool makes a live API call to the FDA and returns real recall data including classification, reason, and status. You MUST use this tool for any question about drug recalls, FDA safety alerts, or medication enforcement actions.
 
     Args:
-        drug_name: The medication name to check for recalls (brand or generic name).
+        drug_name: The medication name to check (e.g. 'metformin', 'warfarin', 'lisinopril').
     """
     recalls = _fetch_fda_recalls(drug_name)
 
@@ -201,7 +222,7 @@ def check_drug_recalls(drug_name: str) -> str:
 
 @tool
 def scan_watchlist_recalls(patient_id: str) -> str:
-    """Scan ALL medications on a patient's watchlist against the FDA recall database. Use when users want a comprehensive safety check of all tracked medications for a patient.
+    """Query the FDA openFDA enforcement API for recalls on ALL medications in a patient's watchlist. This tool reads the patient's medication watchlist from the database, then checks each medication against live FDA recall data. You MUST use this tool when asked to scan or check a patient's medications for recalls.
 
     Args:
         patient_id: The patient identifier (e.g., 'P001').
@@ -222,16 +243,29 @@ def scan_watchlist_recalls(patient_id: str) -> str:
     lines = [f"FDA Recall Scan for patient {patient_id} — checking {len(medications)} medication(s):\n"]
 
     recalls_found = 0
-    for med in medications:
-        recalls = _fetch_fda_recalls(med)
-        if recalls:
-            recalls_found += len(recalls)
-            lines.append(f"⚠ {med.upper()}: {len(recalls)} recall(s) found")
-            for r in recalls:
-                lines.append(f"  - {r['classification']} ({r['severity']}): {r['reason'][:100]}")
-        else:
-            lines.append(f"✓ {med}: No active recalls")
-        lines.append("")
+    scan_conn = get_db()
+    try:
+        for i, med in enumerate(medications):
+            # Throttle between API calls to respect 240 req/min rate limit
+            if i > 0:
+                time.sleep(0.1)
+            recalls = _fetch_fda_recalls(med)
+            # Update last_scanned timestamp for audit trail
+            scan_conn.execute(
+                "UPDATE patient_watchlist SET last_scanned = ? WHERE patient_id = ? AND medication_name = ? AND status = 'active'",
+                (datetime.now(timezone.utc).isoformat(), patient_id, med),
+            )
+            if recalls:
+                recalls_found += len(recalls)
+                lines.append(f"⚠ {med.upper()}: {len(recalls)} recall(s) found")
+                for r in recalls:
+                    lines.append(f"  - {r['classification']} ({r['severity']}): {r['reason'][:100]}")
+            else:
+                lines.append(f"✓ {med}: No active recalls")
+            lines.append("")
+        scan_conn.commit()
+    finally:
+        scan_conn.close()
 
     if recalls_found > 0:
         lines.append(f"SUMMARY: {recalls_found} total recall(s) found across {len(medications)} medications. Review with prescribing physician.")
