@@ -25,6 +25,49 @@ DATA_DIR = Path(__file__).parent.parent / "data" / "observability"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _load_persisted_data():
+    """Load previously saved traces and feedback from JSONL files on startup."""
+    loaded_traces = 0
+    loaded_feedback = 0
+
+    trace_file = DATA_DIR / "traces.jsonl"
+    if trace_file.exists():
+        try:
+            with open(trace_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                        record = TraceRecord(**data)
+                        _traces.append(record)
+                        loaded_traces += 1
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+        except Exception as e:
+            logger.warning("Failed to load traces from disk: %s", e)
+
+    feedback_file = DATA_DIR / "feedback.jsonl"
+    if feedback_file.exists():
+        try:
+            with open(feedback_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        _feedback.append(json.loads(line))
+                        loaded_feedback += 1
+                    except json.JSONDecodeError:
+                        continue
+        except Exception as e:
+            logger.warning("Failed to load feedback from disk: %s", e)
+
+    if loaded_traces or loaded_feedback:
+        logger.info("Loaded %d traces and %d feedback records from disk", loaded_traces, loaded_feedback)
+
+
 @dataclass
 class TraceRecord:
     """Full trace of a single agent request."""
@@ -134,9 +177,12 @@ _traces: list[TraceRecord] = []
 _feedback: list[dict] = []
 _eval_history: list[dict] = []
 
+# Restore persisted data on startup
+_load_persisted_data()
+
 
 def _save_trace(trace: TraceRecord):
-    """Save a trace record to memory and optionally to disk."""
+    """Save a trace record to memory and persist to disk immediately."""
     _traces.append(trace)
 
     # Log structured trace
@@ -159,20 +205,13 @@ def _save_trace(trace: TraceRecord):
             trace.error,
         )
 
-    # Persist to disk periodically
-    if len(_traces) % 10 == 0:
-        _flush_traces()
-
-
-def _flush_traces():
-    """Write traces to disk."""
+    # Persist every trace immediately (append-only JSONL)
     try:
         trace_file = DATA_DIR / "traces.jsonl"
         with open(trace_file, "a") as f:
-            for trace in _traces[-10:]:
-                f.write(json.dumps(asdict(trace)) + "\n")
+            f.write(json.dumps(asdict(trace)) + "\n")
     except Exception as e:
-        logger.warning("Failed to flush traces: %s", e)
+        logger.warning("Failed to persist trace: %s", e)
 
 
 # ===================================================================

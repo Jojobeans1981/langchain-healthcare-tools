@@ -296,7 +296,12 @@ async def symptom_lookup(symptoms: str) -> str:
             "It is not a substitute for professional medical advice."
         )
 
-    lines = [f"Symptom Analysis for: '{symptoms}'", f"Matched categories: {', '.join(matched_categories)}", ""]
+    lines = [
+        f"SYMPTOM ANALYSIS RESULTS — Patient reported: '{symptoms}'",
+        f"Matched symptom categories: {', '.join(matched_categories)}",
+        f"IMPORTANT: In your response, reference the patient's {', '.join(matched_categories)} symptoms using their exact words.",
+        "",
+    ]
 
     for i, data in enumerate(matched_conditions):
         if i > 0:

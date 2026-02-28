@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -8,7 +9,7 @@ class Settings(BaseSettings):
     google_api_key: str = ""
     model_name: str = "llama-3.3-70b-versatile"
     model_temperature: float = 0.1
-    model_max_tokens: int = 1024
+    model_max_tokens: int = 2048
 
     # OpenEMR REST API connection
     openemr_base_url: str = "https://localhost:9300"
@@ -26,6 +27,29 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @field_validator("llm_provider")
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        allowed = {"groq", "gemini"}
+        if v.lower() not in allowed:
+            raise ValueError(f"llm_provider must be one of {allowed}, got '{v}'")
+        return v.lower()
+
+    @field_validator("model_temperature")
+    @classmethod
+    def validate_temperature(cls, v: float) -> float:
+        if not 0.0 <= v <= 2.0:
+            raise ValueError(f"model_temperature must be between 0.0 and 2.0, got {v}")
+        return v
+
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        allowed = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+        if v.upper() not in allowed:
+            raise ValueError(f"log_level must be one of {allowed}, got '{v}'")
+        return v.upper()
 
 
 settings = Settings()

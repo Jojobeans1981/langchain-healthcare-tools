@@ -115,8 +115,8 @@ async def appointment_availability(specialty: str, date_range_days: int = 7) -> 
     display_slots = filtered if filtered else slots
 
     lines = [
-        f"APPOINTMENT RESULTS FOR {specialty.upper()}:",
-        f"Found {len(display_slots)} available slot(s). YOU MUST LIST ALL OF THESE TO THE USER:",
+        f"APPOINTMENT RESULTS FOR {specialty.upper()} ({specialty}):",
+        f"Found {len(display_slots)} available {specialty} appointment slot(s). YOU MUST LIST ALL OF THESE TO THE USER:",
         "",
     ]
 

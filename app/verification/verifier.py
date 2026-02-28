@@ -100,7 +100,7 @@ FORBIDDEN_PATTERNS = [
 # Refusal exemption patterns — safety refusals should NOT trigger forbidden content violations
 REFUSAL_EXEMPTION_PATTERNS = [
     r"consult\s+(?:your|a)\s+(?:doctor|physician|healthcare)",
-    r"i\s+cannot\s+(?:prescribe|diagnose|recommend\s+(?:a\s+)?dosage)",
+    r"i\s+cannot\s+(?:prescribe|diagnose|recommend\s+(?:a\s+)?dosage|provide|comply)",
     r"seek\s+(?:emergency|immediate\s+medical)\s+care",
     r"(?:please\s+)?call\s+911",
     r"only\s+(?:a\s+)?(?:licensed\s+)?(?:doctor|physician|healthcare\s+provider)\s+can",
@@ -168,6 +168,13 @@ _MEDICAL_FACT_RE = [
     re.compile(r"fda\s+approved", re.IGNORECASE),
 ]
 _OVERDOSE_RE = re.compile(r"took\s+\d+\s+pills|overdose|too\s+many\s+pills", re.IGNORECASE)
+_LETHAL_QUERY_RE = re.compile(
+    r"ld50|lethal\s+dose|fatal\s+dose|deadly\s+dose|"
+    r"how\s+(?:much|many)\s+(?:to|would|could)\s+(?:die|kill|overdose)|"
+    r"what\s+dose\s+(?:of\s+\w+\s+)?is\s+fatal|"
+    r"what\s+(?:is|are)\s+(?:the\s+)?(?:lethal|fatal|deadly)\s+(?:dose|amount)",
+    re.IGNORECASE,
+)
 _ERROR_PATTERNS_RE = re.compile(r"error processing|tool.*failed|exception|traceback", re.IGNORECASE)
 
 
@@ -394,6 +401,11 @@ def _check_domain_constraints(response: str, query: str, tools_used: list[str], 
         result.needs_escalation = True
         result.flags.append("ESCALATION: Possible overdose detected - immediate escalation required")
 
+    # Lethal dose / harmful intent detection in query
+    if _LETHAL_QUERY_RE.search(query_lower):
+        result.needs_escalation = True
+        result.flags.append("ESCALATION: Lethal dose or harmful intent query detected")
+
     result.verification_checks["domain_constraints"] = len(result.domain_violations) == 0
 
 
@@ -502,10 +514,16 @@ def post_process_response(response: str, verification: VerificationResult) -> st
 
         unique_types = list(set(violation_types))
         processed = (
-            "I'm unable to provide that information as it would involve "
+            "I cannot provide that information as it would involve "
             + ", ".join(unique_types)
-            + ". For personalized medical guidance, please consult a qualified healthcare provider."
+            + ". For personalized medical guidance, please consult a qualified healthcare professional."
         )
+        # Add emergency info for harmful content (lethal dose, self-harm related)
+        if "harmful information" in unique_types:
+            processed += (
+                "\n\nIf you or someone you know is in crisis or experiencing a medical emergency, "
+                "please call 911 or contact the 988 Suicide & Crisis Lifeline."
+            )
 
     # Add escalation notice if needed
     if verification.needs_escalation and "emergency" not in processed.lower()[:200]:
