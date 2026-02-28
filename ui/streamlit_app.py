@@ -1,10 +1,11 @@
+import os
 import uuid
 
 import httpx
 import streamlit as st
 
-# Configuration
-API_BASE_URL = "http://localhost:8000/api"
+# Configuration — supports environment variable override for production
+API_BASE_URL = os.environ.get("AGENTFORGE_API_URL", "http://localhost:8000/api")
 
 st.set_page_config(
     page_title="AgentForge Healthcare AI",
@@ -36,8 +37,8 @@ st.markdown("""
         width: 75vw;
         height: 60vh;
         pointer-events: none;
-        z-index: 0;
-        opacity: 0.04;
+        z-index: 1;
+        opacity: 0.08;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 220'%3E%3Cdefs%3E%3ClinearGradient id='wm' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='300' y='110' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='900' font-size='82' fill='url(%23wm)' letter-spacing='-2'%3EAGENTFORGE%3C/text%3E%3Ctext x='300' y='175' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='600' font-size='32' fill='%230ea5e9' letter-spacing='10'%3EHEALTHCARE AI%3C/text%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: center;
@@ -52,8 +53,8 @@ st.markdown("""
         width: 140px;
         height: 52px;
         pointer-events: none;
-        z-index: 0;
-        opacity: 0.10;
+        z-index: 1;
+        opacity: 0.18;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 70'%3E%3Ctext x='8' y='32' font-family='Inter,system-ui,sans-serif' font-weight='800' font-size='18' fill='%230ea5e9' letter-spacing='3'%3EGAUNTLET AI%3C/text%3E%3Crect x='8' y='42' width='56' height='24' rx='12' fill='none' stroke='%230ea5e9' stroke-width='2'/%3E%3Ctext x='36' y='60' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='900' font-size='16' fill='%230ea5e9'%3EG4%3C/text%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: center;
@@ -369,13 +370,43 @@ st.markdown("""
             0 8px 32px rgba(14,165,233,0.12),
             inset 0 1px 0 rgba(255,255,255,0.06);
     }
-    /* Staggered animation delays for the 6 example cards */
+    /* Staggered animation delays for the example cards */
     div[data-testid="stVerticalBlock"] > div:nth-child(1) button[kind="secondary"] { animation-delay: 0s; }
     div[data-testid="stVerticalBlock"] > div:nth-child(2) button[kind="secondary"] { animation-delay: 0.08s; }
     div[data-testid="stVerticalBlock"] > div:nth-child(3) button[kind="secondary"] { animation-delay: 0.16s; }
     div[data-testid="stVerticalBlock"] > div:nth-child(4) button[kind="secondary"] { animation-delay: 0.24s; }
     div[data-testid="stVerticalBlock"] > div:nth-child(5) button[kind="secondary"] { animation-delay: 0.32s; }
     div[data-testid="stVerticalBlock"] > div:nth-child(6) button[kind="secondary"] { animation-delay: 0.40s; }
+
+    /* ── Featured Clinical Decision Engine card ── */
+    button[kind="secondary"].af-featured-btn,
+    div[data-testid="stVerticalBlock"] > div:first-child button[kind="secondary"] {
+        background: linear-gradient(135deg, rgba(14,165,233,0.10), rgba(139,92,246,0.10));
+        border: 1px solid rgba(139,92,246,0.25);
+        font-size: 0.85rem;
+        padding: 1rem 1.2rem;
+        position: relative;
+    }
+    div[data-testid="stVerticalBlock"] > div:first-child button[kind="secondary"]:hover {
+        border-color: rgba(139,92,246,0.5);
+        background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(139,92,246,0.15));
+        box-shadow:
+            0 0 0 1px rgba(139,92,246,0.3),
+            0 8px 32px rgba(139,92,246,0.15),
+            inset 0 1px 0 rgba(255,255,255,0.06);
+        transform: translateY(-3px);
+    }
+
+    /* Clinical Decision Report pill */
+    .af-pill-cdr {
+        background: rgba(139,92,246,0.15);
+        color: #c4b5fd;
+        border: 1px solid rgba(139,92,246,0.3);
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.68rem;
+        font-weight: 600;
+    }
 
     /* ══════════════════════════════════════════════════════════════════
        §6  POLISHED CHAT BUBBLES
@@ -654,6 +685,68 @@ st.markdown("""
         color: #fde68a;
         box-shadow: 0 2px 8px rgba(251,191,36,0.1);
     }
+    /* ── Tool detail cards (sidebar) ── */
+    .af-tool-card {
+        background: rgba(14,165,233,0.04);
+        border: 1px solid rgba(14,165,233,0.1);
+        border-radius: 10px;
+        padding: 0.55rem 0.65rem;
+        margin-bottom: 0.4rem;
+        transition: all 0.25s ease;
+    }
+    .af-tool-card:hover {
+        border-color: rgba(14,165,233,0.25);
+        background: rgba(14,165,233,0.08);
+    }
+    .af-tool-card.af-bounty-card {
+        border-color: rgba(251,191,36,0.15);
+        background: rgba(251,191,36,0.04);
+    }
+    .af-tool-card.af-bounty-card:hover {
+        border-color: rgba(251,191,36,0.3);
+        background: rgba(251,191,36,0.08);
+    }
+    .af-tool-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-bottom: 0.2rem;
+    }
+    .af-tool-card-icon {
+        font-size: 0.85rem;
+        line-height: 1;
+    }
+    .af-tool-card-name {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #e2e8f0;
+        letter-spacing: 0.01em;
+    }
+    .af-bounty-card .af-tool-card-name {
+        color: #fbbf24;
+    }
+    .af-tool-card-desc {
+        font-size: 0.62rem;
+        color: #64748b;
+        line-height: 1.4;
+        margin-bottom: 0.25rem;
+    }
+    .af-tool-card-example {
+        font-size: 0.58rem;
+        color: #0ea5e9;
+        font-style: italic;
+        opacity: 0.8;
+        line-height: 1.3;
+    }
+    .af-bounty-card .af-tool-card-example {
+        color: #fbbf24;
+    }
+    .af-tool-card-example::before {
+        content: "Try: ";
+        font-weight: 600;
+        font-style: normal;
+        opacity: 0.7;
+    }
 
     /* ── Sidebar status indicator ── */
     .af-sidebar-status {
@@ -856,11 +949,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+def check_backend_ready() -> bool:
+    """Check if the backend API is reachable."""
+    try:
+        with httpx.Client(timeout=3.0) as client:
+            resp = client.get(f"{API_BASE_URL.replace('/api', '')}/health")
+            return resp.status_code == 200
+    except (httpx.ConnectError, httpx.TimeoutException):
+        return False
+
+
 def init_session():
     if "session_id" not in st.session_state:
         st.session_state.session_id = str(uuid.uuid4())
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    # One-time backend readiness check
+    if "backend_checked" not in st.session_state:
+        st.session_state.backend_checked = True
+        if not check_backend_ready():
+            st.toast("Backend is starting up — first query may take a few seconds", icon="⏳")
 
 
 def send_message(message: str) -> dict | None:
@@ -896,7 +1004,7 @@ def send_feedback(trace_id: str, rating: str):
                 },
             )
     except httpx.ConnectError:
-        pass
+        st.toast("Feedback could not be sent — backend unavailable", icon="⚠️")
 
 
 def get_dashboard_stats() -> dict | None:
@@ -907,7 +1015,7 @@ def get_dashboard_stats() -> dict | None:
             if resp.status_code == 200:
                 return resp.json()
     except httpx.ConnectError:
-        pass
+        pass  # Dashboard stats are non-critical; sidebar gracefully hides when None
     return None
 
 
@@ -919,6 +1027,13 @@ EXAMPLE_QUESTIONS = [
     ("💉", "Medication Info", "What are the side effects of metformin?"),
     ("⚠️", "FDA Recalls", "Scan patient P001's medications for FDA recalls"),
 ]
+
+# Featured complex scenario for the Clinical Decision Engine
+CLINICAL_DECISION_EXAMPLE = (
+    "🏥",
+    "Clinical Decision Report",
+    "68-year-old on metformin and lisinopril, persistent fatigue, needs an endocrinologist",
+)
 
 
 def main():
@@ -963,13 +1078,53 @@ def main():
         st.markdown("### Core Tools")
         st.markdown("""
         <div class="af-sidebar-section">
-            <div class="af-tool-grid">
-                <span class="af-tool-chip">💊 Interactions</span>
-                <span class="af-tool-chip">🤒 Symptoms</span>
-                <span class="af-tool-chip">🩺 Providers</span>
-                <span class="af-tool-chip">📅 Appointments</span>
-                <span class="af-tool-chip">🛡️ Insurance</span>
-                <span class="af-tool-chip">💉 Medications</span>
+            <div class="af-tool-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">💊</span>
+                    <span class="af-tool-card-name">Drug Interactions</span>
+                </div>
+                <div class="af-tool-card-desc">Check interactions between 2+ medications with severity ratings</div>
+                <div class="af-tool-card-example">"Check interaction between warfarin and aspirin"</div>
+            </div>
+            <div class="af-tool-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">🤒</span>
+                    <span class="af-tool-card-name">Symptom Triage</span>
+                </div>
+                <div class="af-tool-card-desc">Match symptoms to possible conditions with urgency levels</div>
+                <div class="af-tool-card-example">"I have a persistent headache with fever"</div>
+            </div>
+            <div class="af-tool-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">💉</span>
+                    <span class="af-tool-card-name">Medication Lookup</span>
+                </div>
+                <div class="af-tool-card-desc">Get dosage, side effects, and warnings for any drug</div>
+                <div class="af-tool-card-example">"What are the side effects of metformin?"</div>
+            </div>
+            <div class="af-tool-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">🩺</span>
+                    <span class="af-tool-card-name">Provider Search</span>
+                </div>
+                <div class="af-tool-card-desc">Find healthcare providers by specialty or name</div>
+                <div class="af-tool-card-example">"Find me a cardiologist"</div>
+            </div>
+            <div class="af-tool-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">📅</span>
+                    <span class="af-tool-card-name">Appointments</span>
+                </div>
+                <div class="af-tool-card-desc">Check appointment availability by specialty and date</div>
+                <div class="af-tool-card-example">"Any dermatology openings this week?"</div>
+            </div>
+            <div class="af-tool-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">🛡️</span>
+                    <span class="af-tool-card-name">Insurance Coverage</span>
+                </div>
+                <div class="af-tool-card-desc">Check if a procedure is covered by an insurance plan</div>
+                <div class="af-tool-card-example">"Does Blue Cross PPO cover an MRI?"</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -977,10 +1132,29 @@ def main():
         st.markdown("### Bounty — FDA Recalls")
         st.markdown("""
         <div class="af-sidebar-section">
-            <div class="af-tool-grid">
-                <span class="af-tool-chip af-bounty">📋 Watchlist</span>
-                <span class="af-tool-chip af-bounty">🔍 Recall Check</span>
-                <span class="af-tool-chip af-bounty" style="grid-column: span 2">⚠️ Watchlist Scanner</span>
+            <div class="af-tool-card af-bounty-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">📋</span>
+                    <span class="af-tool-card-name">Medication Watchlist</span>
+                </div>
+                <div class="af-tool-card-desc">Add, list, remove, or update medications tracked per patient</div>
+                <div class="af-tool-card-example">"Add metformin to patient P001's watchlist"</div>
+            </div>
+            <div class="af-tool-card af-bounty-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">🔍</span>
+                    <span class="af-tool-card-name">Recall Check</span>
+                </div>
+                <div class="af-tool-card-desc">Query the live FDA API for recalls on a specific drug</div>
+                <div class="af-tool-card-example">"Are there any FDA recalls on lisinopril?"</div>
+            </div>
+            <div class="af-tool-card af-bounty-card">
+                <div class="af-tool-card-header">
+                    <span class="af-tool-card-icon">⚠️</span>
+                    <span class="af-tool-card-name">Watchlist Scanner</span>
+                </div>
+                <div class="af-tool-card-desc">Batch scan all watchlist meds against FDA recall database</div>
+                <div class="af-tool-card-example">"Scan patient P001's medications for recalls"</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -995,7 +1169,7 @@ def main():
                         json={"session_id": st.session_state.session_id},
                     )
             except httpx.ConnectError:
-                pass
+                st.toast("Backend unavailable — clearing local session only", icon="ℹ️")
             st.session_state.session_id = str(uuid.uuid4())
             st.session_state.messages = []
             st.rerun()
@@ -1099,6 +1273,16 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
+        # Featured Clinical Decision Engine card (full-width, above the grid)
+        cdr_icon, cdr_label, cdr_question = CLINICAL_DECISION_EXAMPLE
+        if st.button(
+            f"{cdr_icon} **{cdr_label}** — Comprehensive multi-tool analysis\n{cdr_question}",
+            key="welcome_clinical",
+            use_container_width=True,
+        ):
+            st.session_state.pending_example = cdr_question
+            st.rerun()
+
         cols = st.columns(2)
         for i, (icon, label, question) in enumerate(EXAMPLE_QUESTIONS):
             col = cols[i % 2]
@@ -1154,6 +1338,9 @@ def _render_metadata(meta: dict, msg_index: int):
     # Build HTML metadata bar
     pills_html = "".join(f'<span class="af-pill">{t}</span>' for t in tools)
     parts = []
+    # Clinical Decision Report indicator for multi-tool responses
+    if len(tools) >= 3:
+        parts.append('<span class="af-pill-cdr">🏥 Clinical Decision Report</span>')
     if tools:
         parts.append(pills_html)
     conf_pct = int(confidence * 100)
@@ -1165,6 +1352,15 @@ def _render_metadata(meta: dict, msg_index: int):
         parts.append(f'<span class="af-latency">{latency:.0f}ms</span>')
     if sources:
         parts.append(f"{len(sources)} source{'s' if len(sources) != 1 else ''}")
+
+    # Data provenance badge — detect live API vs built-in database
+    source_text = " ".join(str(s) for s in sources).lower() if sources else ""
+    if "live" in source_text or "rxnorm api" in source_text or "openfda" in source_text:
+        parts.append('<span class="af-pill" style="background:rgba(16,185,129,0.2);color:#10b981;border-color:rgba(16,185,129,0.3)">Live API</span>')
+    elif "built-in" in source_text or "agentforge" in source_text or "curated" in source_text:
+        parts.append('<span class="af-pill" style="background:rgba(245,158,11,0.2);color:#f59e0b;border-color:rgba(245,158,11,0.3)">Built-in Data</span>')
+    elif sources:
+        parts.append('<span class="af-pill" style="background:rgba(99,102,241,0.2);color:#818cf8;border-color:rgba(99,102,241,0.3)">Verified Source</span>')
 
     st.markdown(
         f'<div class="af-meta">{" ".join(parts)}</div>',
@@ -1272,7 +1468,10 @@ def _stream_message(message: str) -> tuple[str, dict]:
                 for line in resp.iter_lines():
                     if not line.startswith("data: "):
                         continue
-                    data = json.loads(line[6:])
+                    try:
+                        data = json.loads(line[6:])
+                    except json.JSONDecodeError:
+                        continue
                     event_type = data.get("type", "")
 
                     if event_type == "token":
@@ -1287,12 +1486,27 @@ def _stream_message(message: str) -> tuple[str, dict]:
                         tool_status.empty()
                     elif event_type == "done":
                         metadata.update(data.get("content", {}))
+                    elif event_type == "clarify":
+                        yield data["content"]
                     elif event_type == "error":
-                        yield f"\n\nError: {data['content']}"
+                        error_content = data.get("content", "")
+                        if "failed to call" in error_content.lower() or "failed_generation" in error_content.lower():
+                            yield (
+                                "I wasn't sure how to process that request. Could you try rephrasing? "
+                                "For example:\n\n"
+                                "- \"I have asthma symptoms\" or \"I've been coughing and wheezing\"\n"
+                                "- \"What are the side effects of albuterol?\"\n"
+                                "- \"Find me a pulmonologist\"\n\n"
+                                "**Disclaimer:** This information is for educational purposes only and does not "
+                                "constitute medical advice. Always consult a qualified healthcare professional "
+                                "for personalized medical guidance."
+                            )
+                        else:
+                            yield f"\n\nSomething went wrong. Please try rephrasing your question."
     except httpx.ConnectError:
         yield "Cannot connect to backend. Please try again in a moment."
     except Exception:
-        yield "An error occurred while streaming the response."
+        yield "Something went wrong. Please try rephrasing your question or start a new conversation."
 
     # Store metadata on session state for retrieval after streaming
     st.session_state._stream_metadata = metadata
@@ -1355,7 +1569,10 @@ def _process_message(message: str):
                 })
                 _render_metadata(meta, len(st.session_state.messages) - 1)
             else:
-                error_msg = "Sorry, I couldn't process your request. Please try again."
+                error_msg = (
+                    "I wasn't sure how to process that request. Could you try rephrasing? "
+                    "For example, try asking about specific symptoms, medications, or providers."
+                )
                 st.markdown(error_msg)
                 st.session_state.messages.append({"role": "assistant", "content": error_msg})
 

@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -17,10 +18,26 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Warm up the LLM agent on startup to eliminate cold-start latency."""
+    try:
+        from app.agent.healthcare_agent import get_agent
+        agent = get_agent()
+        logger.info("Agent warmed up successfully: %s", type(agent).__name__)
+    except Exception as e:
+        logger.warning("Agent warmup failed (will retry on first request): %s", e)
+    yield
+
+
 app = FastAPI(
     title="AgentForge Healthcare AI",
     description="Production-ready healthcare AI agent powered by LangGraph and Groq/Llama 3.3",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS for Streamlit frontend

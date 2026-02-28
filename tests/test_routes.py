@@ -1,14 +1,17 @@
 """Isolated unit tests for AgentForge FastAPI routes.
 
 Tests API endpoints with mocked agent — no API keys needed.
+Requires fastapi (optional server dependency).
 """
 
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app
+fastapi = pytest.importorskip("fastapi", reason="fastapi is a server optional dependency")
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app.main import app  # noqa: E402
 
 client = TestClient(app)
 
