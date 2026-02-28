@@ -134,7 +134,7 @@ TOOL_GROUNDING_MARKERS = {
     "provider_search": ["provider", "doctor", "specialist", "dr.", "clinic", "facility", "practice"],
     "appointment_availability": ["available", "appointment", "slot", "schedule", "time", "date"],
     "insurance_coverage_check": ["covered", "coverage", "copay", "deductible", "prior auth", "insurance", "plan"],
-    "medication_lookup": ["indication", "warning", "contraindication", "side effect", "dosage", "prescribed", "medication"],
+    "medication_lookup": ["indication", "warning", "contraindication", "side effect", "dosage", "prescribed", "medication", "adverse", "risk", "drug", "label"],
     "check_drug_recalls": ["recall", "fda", "enforcement", "classification", "withdrawn", "voluntary", "market withdrawal"],
     "manage_watchlist": ["watchlist", "added", "removed", "patient", "medication", "monitoring"],
     "scan_watchlist_recalls": ["recall", "scan", "watchlist", "patient", "alert", "affected"],
