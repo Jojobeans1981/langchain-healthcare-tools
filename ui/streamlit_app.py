@@ -15,6 +15,13 @@ st.set_page_config(
 # ── Custom CSS ──────────────────────────────────────────────────────────
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    /* ── Global ── */
+    .stApp {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
     /* ── Full-page watermark logo (center) ── */
     .stApp::before {
         content: "";
@@ -26,8 +33,8 @@ st.markdown("""
         height: 60vh;
         pointer-events: none;
         z-index: 0;
-        opacity: 0.07;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 220'%3E%3Cdefs%3E%3ClinearGradient id='wm' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='300' y='110' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='900' font-size='82' fill='url(%23wm)' letter-spacing='-2'%3EAGENTFORGE%3C/text%3E%3Ctext x='300' y='175' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='600' font-size='32' fill='%230ea5e9' letter-spacing='10'%3EHEALTHCARE AI%3C/text%3E%3C/svg%3E");
+        opacity: 0.04;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 220'%3E%3Cdefs%3E%3ClinearGradient id='wm' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='300' y='110' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='900' font-size='82' fill='url(%23wm)' letter-spacing='-2'%3EAGENTFORGE%3C/text%3E%3Ctext x='300' y='175' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='600' font-size='32' fill='%230ea5e9' letter-spacing='10'%3EHEALTHCARE AI%3C/text%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: center;
         background-size: contain;
@@ -42,113 +49,379 @@ st.markdown("""
         height: 52px;
         pointer-events: none;
         z-index: 0;
-        opacity: 0.13;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 70'%3E%3Ctext x='8' y='32' font-family='system-ui,sans-serif' font-weight='800' font-size='18' fill='%230ea5e9' letter-spacing='3'%3EGAUNTLET AI%3C/text%3E%3Crect x='8' y='42' width='56' height='24' rx='12' fill='none' stroke='%230ea5e9' stroke-width='2'/%3E%3Ctext x='36' y='60' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='900' font-size='16' fill='%230ea5e9'%3EG4%3C/text%3E%3C/svg%3E");
+        opacity: 0.10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 70'%3E%3Ctext x='8' y='32' font-family='Inter,system-ui,sans-serif' font-weight='800' font-size='18' fill='%230ea5e9' letter-spacing='3'%3EGAUNTLET AI%3C/text%3E%3Crect x='8' y='42' width='56' height='24' rx='12' fill='none' stroke='%230ea5e9' stroke-width='2'/%3E%3Ctext x='36' y='60' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='900' font-size='16' fill='%230ea5e9'%3EG4%3C/text%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: center;
         background-size: contain;
     }
 
-    /* Tighter top padding */
-    .stMainBlockContainer { padding-top: 1.5rem; }
+    /* ── Tighter spacing ── */
+    .stMainBlockContainer { padding-top: 1rem; }
 
-    /* Branded header strip */
+    /* ── Animated gradient header ── */
+    @keyframes headerShift {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
     .af-header {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-        border: 1px solid rgba(14,165,233,0.25);
-        border-radius: 14px;
-        padding: 1.25rem 1.5rem;
-        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #0c1220 0%, #0f2847 25%, #0c1e3a 50%, #112240 75%, #0c1220 100%);
+        background-size: 400% 400%;
+        animation: headerShift 12s ease infinite;
+        border: 1px solid rgba(14,165,233,0.2);
+        border-radius: 16px;
+        padding: 1.4rem 1.6rem;
+        margin-bottom: 0.75rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .af-header::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(ellipse at 20% 50%, rgba(14,165,233,0.08) 0%, transparent 60%);
+        pointer-events: none;
     }
     .af-header h1 {
-        margin: 0 0 0.15rem 0;
-        font-size: 1.65rem;
-        color: #f1f5f9;
-        letter-spacing: -0.02em;
+        margin: 0 0 0.2rem 0;
+        font-size: 1.7rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #e2e8f0, #f8fafc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.03em;
     }
-    .af-header .af-sub {
-        font-size: 0.8rem;
-        color: #94a3b8;
-        margin: 0;
+    .af-header .af-tagline {
+        font-size: 0.82rem;
+        color: #64748b;
+        margin: 0 0 0.65rem 0;
+        font-weight: 500;
+        letter-spacing: 0.01em;
     }
-    .af-header .af-badge {
-        display: inline-block;
-        background: rgba(14,165,233,0.15);
+    .af-badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+    .af-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: rgba(14,165,233,0.08);
         color: #38bdf8;
-        border: 1px solid rgba(14,165,233,0.3);
+        border: 1px solid rgba(14,165,233,0.18);
         border-radius: 999px;
-        padding: 0.15rem 0.6rem;
-        font-size: 0.7rem;
+        padding: 0.2rem 0.65rem;
+        font-size: 0.68rem;
         font-weight: 600;
-        letter-spacing: 0.04em;
-        margin-right: 0.35rem;
+        letter-spacing: 0.02em;
+        backdrop-filter: blur(4px);
+    }
+    .af-badge .af-badge-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        box-shadow: 0 0 6px rgba(14,165,233,0.6);
     }
 
-    /* Example question cards */
-    .af-examples {
+    /* ── Example question cards ── */
+    .af-examples-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0.6rem;
-        margin: 0.75rem 0 1rem 0;
+        gap: 0.55rem;
+        margin: 0.5rem 0 1rem 0;
+    }
+    .af-example-card {
+        background: rgba(15,23,42,0.5);
+        border: 1px solid rgba(14,165,233,0.12);
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .af-example-card:hover {
+        border-color: rgba(14,165,233,0.45);
+        background: rgba(15,23,42,0.7);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(14,165,233,0.1);
+    }
+    .af-example-card::after {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 0% 0%, rgba(14,165,233,0.06) 0%, transparent 50%);
+        pointer-events: none;
+    }
+    .af-example-icon {
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+    .af-example-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #38bdf8;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.15rem;
+    }
+    .af-example-text {
+        font-size: 0.82rem;
+        color: #94a3b8;
+        line-height: 1.35;
     }
 
-    /* Style Streamlit buttons as cards */
+    /* ── Override Streamlit buttons to look like our cards ── */
     div[data-testid="stVerticalBlock"] button[kind="secondary"] {
-        border: 1px solid rgba(14,165,233,0.2);
-        border-radius: 10px;
-        transition: all 0.2s ease;
+        border: 1px solid rgba(14,165,233,0.15);
+        border-radius: 12px;
+        transition: all 0.25s ease;
         text-align: left;
-        font-size: 0.85rem;
-        padding: 0.6rem 0.8rem;
+        font-size: 0.82rem;
+        padding: 0.7rem 0.9rem;
+        background: rgba(15,23,42,0.4);
     }
     div[data-testid="stVerticalBlock"] button[kind="secondary"]:hover {
-        border-color: rgba(14,165,233,0.6);
+        border-color: rgba(14,165,233,0.5);
         background: rgba(14,165,233,0.06);
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(14,165,233,0.08);
     }
 
-    /* Sidebar */
+    /* ── Sidebar ── */
     section[data-testid="stSidebar"] {
-        border-right: 1px solid rgba(14,165,233,0.12);
+        border-right: 1px solid rgba(14,165,233,0.08);
+        background: linear-gradient(180deg, rgba(12,18,32,0.95) 0%, rgba(15,23,42,0.95) 100%);
     }
     section[data-testid="stSidebar"] .stMarkdown h3 {
-        font-size: 0.75rem;
+        font-size: 0.68rem;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        opacity: 0.6;
+        letter-spacing: 0.12em;
+        opacity: 0.5;
         margin-bottom: 0.4rem;
+        font-weight: 700;
+    }
+    .af-sidebar-section {
+        background: rgba(14,165,233,0.04);
+        border: 1px solid rgba(14,165,233,0.08);
+        border-radius: 10px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    .af-tool-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.3rem;
+    }
+    .af-tool-chip {
+        font-size: 0.68rem;
+        color: #94a3b8;
+        background: rgba(14,165,233,0.06);
+        border: 1px solid rgba(14,165,233,0.1);
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        text-align: center;
+        font-weight: 500;
+    }
+    .af-tool-chip.af-bounty {
+        color: #fbbf24;
+        background: rgba(251,191,36,0.06);
+        border-color: rgba(251,191,36,0.15);
     }
 
-    /* Smaller metric values in sidebar */
-    div[data-testid="stMetricValue"] { font-size: 1.3rem; }
-    div[data-testid="stMetricLabel"] { font-size: 0.72rem; opacity: 0.7; }
+    /* ── Sidebar metrics ── */
+    div[data-testid="stMetricValue"] { font-size: 1.2rem; font-weight: 700; }
+    div[data-testid="stMetricLabel"] { font-size: 0.68rem; opacity: 0.6; font-weight: 600; }
 
-    /* Chat bubbles */
-    .stChatMessage { border-radius: 12px; }
+    /* ── Tool usage bars ── */
+    .af-tool-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.3rem;
+        font-size: 0.68rem;
+    }
+    .af-tool-bar-label {
+        min-width: 80px;
+        color: #94a3b8;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .af-tool-bar-track {
+        flex: 1;
+        height: 6px;
+        background: rgba(14,165,233,0.08);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .af-tool-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+        transition: width 0.4s ease;
+    }
+    .af-tool-bar-fill.af-bounty-bar {
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+    .af-tool-bar-count {
+        min-width: 18px;
+        text-align: right;
+        color: #64748b;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 0.62rem;
+    }
 
-    /* Metadata bar under assistant messages */
+    /* ── Escalation counter ── */
+    .af-escalation {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.6rem;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        margin: 0.3rem 0;
+    }
+    .af-escalation-safe {
+        background: rgba(74,222,128,0.06);
+        border: 1px solid rgba(74,222,128,0.15);
+        color: #4ade80;
+    }
+    .af-escalation-active {
+        background: rgba(248,113,113,0.08);
+        border: 1px solid rgba(248,113,113,0.2);
+        color: #f87171;
+    }
+
+    /* ── Verification scorecard (inline) ── */
+    .af-verification {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.35rem;
+        padding: 0.4rem 0.6rem;
+        background: rgba(15,23,42,0.4);
+        border: 1px solid rgba(148,163,184,0.06);
+        border-radius: 6px;
+        font-size: 0.65rem;
+        color: #64748b;
+    }
+    .af-v-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .af-v-pass { color: #4ade80; }
+    .af-v-warn { color: #fbbf24; }
+    .af-v-fail { color: #f87171; }
+
+    /* ── Chat bubbles ── */
+    .stChatMessage {
+        border-radius: 14px;
+        border: 1px solid rgba(148,163,184,0.06);
+    }
+    .stChatMessage [data-testid="chatAvatarIcon-user"] {
+        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    }
+    .stChatMessage [data-testid="chatAvatarIcon-assistant"] {
+        background: linear-gradient(135deg, #10b981, #34d399);
+    }
+
+    /* ── Metadata bar ── */
     .af-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
+        gap: 0.6rem;
         align-items: center;
-        font-size: 0.75rem;
-        color: #94a3b8;
-        margin-top: 0.4rem;
-        padding: 0.4rem 0;
-        border-top: 1px solid rgba(148,163,184,0.12);
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+        padding: 0.5rem 0.6rem;
+        border-top: 1px solid rgba(148,163,184,0.08);
+        background: rgba(15,23,42,0.3);
+        border-radius: 8px;
     }
     .af-meta .af-pill {
         background: rgba(14,165,233,0.1);
         color: #7dd3fc;
+        border: 1px solid rgba(14,165,233,0.15);
         border-radius: 999px;
-        padding: 0.1rem 0.55rem;
-        font-size: 0.7rem;
-        font-weight: 500;
+        padding: 0.12rem 0.55rem;
+        font-size: 0.65rem;
+        font-weight: 600;
     }
-    .af-confidence-high { color: #4ade80; }
-    .af-confidence-mid  { color: #fbbf24; }
-    .af-confidence-low  { color: #f87171; }
+    .af-meta .af-latency {
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 0.65rem;
+        color: #475569;
+    }
+    .af-confidence-high { color: #4ade80; font-weight: 600; }
+    .af-confidence-mid  { color: #fbbf24; font-weight: 600; }
+    .af-confidence-low  { color: #f87171; font-weight: 600; }
+
+    /* ── Tool activity pulse ── */
+    @keyframes toolPulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+    .af-tool-active {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.78rem;
+        color: #38bdf8;
+        font-weight: 600;
+        animation: toolPulse 1.5s ease infinite;
+    }
+    .af-tool-active::before {
+        content: "";
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: #0ea5e9;
+        box-shadow: 0 0 8px rgba(14,165,233,0.6);
+    }
+
+    /* ── Disclaimer bar ── */
+    .af-disclaimer {
+        background: rgba(234,179,8,0.06);
+        border: 1px solid rgba(234,179,8,0.15);
+        border-radius: 10px;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.75rem;
+        color: #a3a3a3;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .af-disclaimer strong { color: #fbbf24; }
+
+    /* ── Welcome heading ── */
+    .af-welcome {
+        text-align: center;
+        margin: 1rem 0 0.25rem 0;
+    }
+    .af-welcome h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #e2e8f0;
+        margin: 0;
+    }
+    .af-welcome p {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin: 0.25rem 0 0 0;
+    }
+
+    /* ── Chat input ── */
+    .stChatInput textarea {
+        border-radius: 12px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -209,12 +482,12 @@ def get_dashboard_stats() -> dict | None:
 
 
 EXAMPLE_QUESTIONS = [
-    ("Drug Interactions", "Check interaction between warfarin and aspirin"),
-    ("Symptom Triage", "I have a persistent headache with fever"),
-    ("Find a Provider", "Find me a cardiologist"),
-    ("Insurance", "Does Blue Cross PPO cover an MRI?"),
-    ("Medication Info", "What are the side effects of metformin?"),
-    ("FDA Recalls", "Scan patient P001's medications for FDA recalls"),
+    ("💊", "Drug Interactions", "Check interaction between warfarin and aspirin"),
+    ("🤒", "Symptom Triage", "I have a persistent headache with fever"),
+    ("🩺", "Find a Provider", "Find me a cardiologist"),
+    ("🛡️", "Insurance", "Does Blue Cross PPO cover an MRI?"),
+    ("💉", "Medication Info", "What are the side effects of metformin?"),
+    ("⚠️", "FDA Recalls", "Scan patient P001's medications for FDA recalls"),
 ]
 
 
@@ -225,31 +498,51 @@ def main():
     st.markdown("""
     <div class="af-header">
         <h1>AgentForge Healthcare AI</h1>
-        <p class="af-sub" style="margin-bottom:0.5rem;">
-            Nine tools. Five safeguards. Zero hallucinations.
-        </p>
-        <span class="af-badge">LangGraph</span>
-        <span class="af-badge">Groq / Llama 3.3 70B</span>
-        <span class="af-badge">9 Tools</span>
-        <span class="af-badge">5-Layer Verification</span>
+        <p class="af-tagline">Nine tools. Five safeguards. Zero hallucinations.</p>
+        <div class="af-badge-row">
+            <span class="af-badge"><span class="af-badge-dot"></span> LangGraph ReAct</span>
+            <span class="af-badge">Groq / Llama 3.3 70B</span>
+            <span class="af-badge">9 Tools</span>
+            <span class="af-badge">5-Layer Verification</span>
+            <span class="af-badge">FDA Recall Monitoring</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Disclaimer (compact)
-    st.info(
-        "**For educational purposes only.** Not a substitute for professional medical advice. "
-        "If experiencing a medical emergency, call **911** immediately.",
-        icon="⚕️",
-    )
+    # Disclaimer
+    st.markdown("""
+    <div class="af-disclaimer">
+        <span>⚕️</span>
+        <span><strong>Educational purposes only.</strong> Not a substitute for professional medical advice. If experiencing a medical emergency, call <strong>911</strong> immediately.</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Sidebar ─────────────────────────────────────────────────────────
     with st.sidebar:
-        st.markdown("### Tools")
-        st.markdown(
-            "**Core:** Drug Interactions · Symptoms · "
-            "Providers · Appointments · Insurance · Medications\n\n"
-            "**FDA Recall:** Watchlist · Recall Checker · Watchlist Scanner"
-        )
+        st.markdown("### Core Tools")
+        st.markdown("""
+        <div class="af-sidebar-section">
+            <div class="af-tool-grid">
+                <span class="af-tool-chip">💊 Interactions</span>
+                <span class="af-tool-chip">🤒 Symptoms</span>
+                <span class="af-tool-chip">🩺 Providers</span>
+                <span class="af-tool-chip">📅 Appointments</span>
+                <span class="af-tool-chip">🛡️ Insurance</span>
+                <span class="af-tool-chip">💉 Medications</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("### Bounty — FDA Recalls")
+        st.markdown("""
+        <div class="af-sidebar-section">
+            <div class="af-tool-grid">
+                <span class="af-tool-chip af-bounty">📋 Watchlist</span>
+                <span class="af-tool-chip af-bounty">🔍 Recall Check</span>
+                <span class="af-tool-chip af-bounty" style="grid-column: span 2">⚠️ Watchlist Scanner</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.divider()
 
@@ -273,21 +566,77 @@ def main():
             st.markdown("### Observability")
             c1, c2 = st.columns(2)
             c1.metric("Requests", stats["total_requests"])
-            c2.metric("Errors", stats.get("error_count", 0))
+            error_count = stats.get("error_count", 0)
+            error_rate = stats.get("error_rate", 0)
+            c2.metric("Errors", f"{error_count} ({error_rate:.0%})")
             c1.metric("Avg Latency", f"{stats.get('avg_latency_ms', 0):.0f}ms")
             c2.metric("Avg Confidence", f"{stats.get('avg_confidence', 0):.0%}")
 
+            # Token usage
+            total_tokens = stats.get("total_tokens", 0)
+            if total_tokens > 0:
+                total_cost = stats.get("total_cost_usd", 0)
+                cost_str = f"  ·  ${total_cost:.4f}" if total_cost > 0 else ""
+                st.caption(f"Tokens: {total_tokens:,}{cost_str}")
+
+            # Feedback
             fb = stats.get("feedback", {})
             if fb.get("thumbs_up", 0) or fb.get("thumbs_down", 0):
-                st.caption(f"Feedback: {fb.get('thumbs_up', 0)} up / {fb.get('thumbs_down', 0)} down")
+                st.caption(f"👍 {fb.get('thumbs_up', 0)}  ·  👎 {fb.get('thumbs_down', 0)}")
 
-            total_cost = stats.get("total_cost_usd", 0)
-            if total_cost > 0:
-                st.caption(f"Est. cost: ${total_cost:.4f}")
+            # Escalation counter
+            esc_count = stats.get("escalation_count", 0)
+            if esc_count > 0:
+                st.markdown(
+                    f'<div class="af-escalation af-escalation-active">🚨 {esc_count} emergency escalation{"s" if esc_count != 1 else ""} triggered</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    '<div class="af-escalation af-escalation-safe">✓ No emergency escalations</div>',
+                    unsafe_allow_html=True,
+                )
 
-        # Debug (collapsed by default)
+            # Tool usage breakdown
+            tool_usage = stats.get("tool_usage", {})
+            if tool_usage:
+                st.markdown("### Tool Usage")
+                bounty_tools = {"manage_watchlist", "check_drug_recalls", "scan_watchlist_recalls"}
+                max_count = max(tool_usage.values()) if tool_usage else 1
+                sorted_tools = sorted(tool_usage.items(), key=lambda x: x[1], reverse=True)
+                bars_html = ""
+                for tool_name, count in sorted_tools:
+                    pct = (count / max_count) * 100
+                    short_name = tool_name.replace("_", " ").title()
+                    if len(short_name) > 14:
+                        short_name = short_name[:13] + "…"
+                    bar_class = "af-bounty-bar" if tool_name in bounty_tools else ""
+                    bars_html += f"""<div class="af-tool-bar-row">
+                        <span class="af-tool-bar-label">{short_name}</span>
+                        <div class="af-tool-bar-track"><div class="af-tool-bar-fill {bar_class}" style="width:{pct:.0f}%"></div></div>
+                        <span class="af-tool-bar-count">{count}</span>
+                    </div>"""
+                st.markdown(
+                    f'<div class="af-sidebar-section">{bars_html}</div>',
+                    unsafe_allow_html=True,
+                )
+
+        # Session info
+        msg_count = len(st.session_state.messages)
+        if msg_count > 0:
+            user_msgs = sum(1 for m in st.session_state.messages if m["role"] == "user")
+            st.caption(f"Session: {user_msgs} query{'s' if user_msgs != 1 else ''}")
+
+        # Debug (collapsed)
         with st.expander("System Debug", expanded=False):
-            st.caption(f"Session: {st.session_state.session_id[:8]}")
+            st.caption(f"Session: `{st.session_state.session_id[:8]}`")
+
+            # Recent errors
+            if stats and stats.get("recent_errors"):
+                st.markdown("**Recent Errors:**")
+                for err in stats["recent_errors"][-3:]:
+                    st.caption(f"• `{err.get('category', 'Unknown')}`: {err.get('error', 'N/A')[:80]}")
+
             if st.button("Run Diagnostics", key="diag"):
                 try:
                     with httpx.Client(timeout=15.0) as client:
@@ -301,14 +650,20 @@ def main():
 
     # ── Chat area ───────────────────────────────────────────────────────
     if not st.session_state.messages:
-        # Welcome state with categorised example prompts
-        st.markdown("#### Try asking:")
+        # Welcome state
+        st.markdown("""
+        <div class="af-welcome">
+            <h2>What can I help you with?</h2>
+            <p>Ask about drug interactions, symptoms, providers, insurance, or FDA recalls.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
         cols = st.columns(2)
-        for i, (label, question) in enumerate(EXAMPLE_QUESTIONS):
+        for i, (icon, label, question) in enumerate(EXAMPLE_QUESTIONS):
             col = cols[i % 2]
             with col:
                 if st.button(
-                    f"**{label}**\n{question}",
+                    f"{icon} **{label}**\n{question}",
                     key=f"welcome_{i}",
                     use_container_width=True,
                 ):
@@ -354,7 +709,7 @@ def _render_metadata(meta: dict, msg_index: int):
         parts.append(pills_html)
     parts.append(f'<span class="{conf_cls}">Confidence {confidence:.0%}</span>')
     if latency:
-        parts.append(f"{latency:.0f}ms")
+        parts.append(f'<span class="af-latency">{latency:.0f}ms</span>')
     if sources:
         parts.append(f"{len(sources)} source{'s' if len(sources) != 1 else ''}")
 
@@ -362,6 +717,43 @@ def _render_metadata(meta: dict, msg_index: int):
         f'<div class="af-meta">{" ".join(parts)}</div>',
         unsafe_allow_html=True,
     )
+
+    # Inline verification scorecard
+    verification = meta.get("verification", {})
+    if verification:
+        v_items = []
+        # Source grounding
+        has_sources = verification.get("has_sources", False)
+        v_items.append(
+            f'<span class="af-v-item {"af-v-pass" if has_sources else "af-v-warn"}">{"✓" if has_sources else "○"} Sources</span>'
+        )
+        # Hallucination risk
+        h_risk = verification.get("hallucination_risk", 0)
+        if h_risk > 0.5:
+            v_items.append(f'<span class="af-v-item af-v-fail">⚠ Hallucination {h_risk:.0%}</span>')
+        elif h_risk > 0:
+            v_items.append(f'<span class="af-v-item af-v-warn">○ Hallucination {h_risk:.0%}</span>')
+        else:
+            v_items.append('<span class="af-v-item af-v-pass">✓ Grounded</span>')
+        # Domain violations
+        violations = verification.get("domain_violations", [])
+        if violations:
+            v_items.append(f'<span class="af-v-item af-v-fail">⚠ {len(violations)} violation{"s" if len(violations) != 1 else ""}</span>')
+        else:
+            v_items.append('<span class="af-v-item af-v-pass">✓ Domain safe</span>')
+        # Escalation
+        if verification.get("needs_escalation"):
+            v_items.append('<span class="af-v-item af-v-fail">🚨 Escalation</span>')
+        # Output valid
+        if verification.get("output_valid", True):
+            v_items.append('<span class="af-v-item af-v-pass">✓ Valid</span>')
+        else:
+            v_items.append('<span class="af-v-item af-v-fail">⚠ Invalid</span>')
+
+        st.markdown(
+            f'<div class="af-verification">{" ".join(v_items)}</div>',
+            unsafe_allow_html=True,
+        )
 
     # Collapsible structured results
     if tools or meta.get("trace_id"):
@@ -434,7 +826,10 @@ def _stream_message(message: str) -> tuple[str, dict]:
                         full_text += data["content"]
                         yield data["content"]
                     elif event_type == "tool_start":
-                        tool_status.caption(f"Using tool: {data['content']}...")
+                        tool_status.markdown(
+                            f'<div class="af-tool-active">Using {data["content"]}</div>',
+                            unsafe_allow_html=True,
+                        )
                     elif event_type == "tool_end":
                         tool_status.empty()
                     elif event_type == "done":
