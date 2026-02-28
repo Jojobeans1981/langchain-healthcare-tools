@@ -15,11 +15,15 @@ st.set_page_config(
 # ── Custom CSS ──────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-    /* ── Global ── */
+    /* ══════════════════════════════════════════════════════════════════
+       §1  GLOBAL · GLASS-MORPHISM DESIGN SYSTEM
+       ══════════════════════════════════════════════════════════════════ */
     .stApp {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        line-height: 1.6;
+        letter-spacing: 0.01em;
     }
 
     /* ── Full-page watermark logo (center) ── */
@@ -56,14 +60,97 @@ st.markdown("""
         background-size: contain;
     }
 
+    /* ══════════════════════════════════════════════════════════════════
+       §2  AMBIENT AURORA BACKGROUND
+       ══════════════════════════════════════════════════════════════════ */
+    @keyframes auroraShift {
+        0%   { transform: translate(-50%,-50%) rotate(0deg) scale(1); opacity: 0.035; }
+        25%  { transform: translate(-50%,-50%) rotate(90deg) scale(1.15); opacity: 0.05; }
+        50%  { transform: translate(-50%,-50%) rotate(180deg) scale(0.95); opacity: 0.03; }
+        75%  { transform: translate(-50%,-50%) rotate(270deg) scale(1.1); opacity: 0.045; }
+        100% { transform: translate(-50%,-50%) rotate(360deg) scale(1); opacity: 0.035; }
+    }
+    .af-aurora {
+        position: fixed;
+        top: 40%;
+        left: 55%;
+        width: 70vw;
+        height: 70vw;
+        max-width: 900px;
+        max-height: 900px;
+        pointer-events: none;
+        z-index: 0;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at center,
+            rgba(14,165,233,0.12) 0%,
+            rgba(59,130,246,0.08) 25%,
+            rgba(139,92,246,0.05) 50%,
+            transparent 70%
+        );
+        filter: blur(80px);
+        animation: auroraShift 30s ease-in-out infinite;
+    }
+    @keyframes auroraShift2 {
+        0%   { transform: translate(-50%,-50%) rotate(180deg) scale(0.9); opacity: 0.025; }
+        50%  { transform: translate(-50%,-50%) rotate(360deg) scale(1.1); opacity: 0.04; }
+        100% { transform: translate(-50%,-50%) rotate(540deg) scale(0.9); opacity: 0.025; }
+    }
+    .af-aurora-2 {
+        position: fixed;
+        top: 60%;
+        left: 30%;
+        width: 50vw;
+        height: 50vw;
+        max-width: 650px;
+        max-height: 650px;
+        pointer-events: none;
+        z-index: 0;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at center,
+            rgba(16,185,129,0.08) 0%,
+            rgba(14,165,233,0.05) 40%,
+            transparent 70%
+        );
+        filter: blur(70px);
+        animation: auroraShift2 25s ease-in-out infinite;
+    }
+
+    /* ── Custom scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(14,165,233,0.2);
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(14,165,233,0.35);
+    }
+
+    /* ── Smooth scrolling ── */
+    html, .main { scroll-behavior: smooth; }
+
     /* ── Tighter spacing ── */
     .stMainBlockContainer { padding-top: 1rem; }
 
-    /* ── Animated gradient header ── */
+    /* ══════════════════════════════════════════════════════════════════
+       §3  ANIMATED GRADIENT HEADER
+       ══════════════════════════════════════════════════════════════════ */
     @keyframes headerShift {
         0%   { background-position: 0% 50%; }
         50%  { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
+    }
+    @keyframes shimmer {
+        0%   { background-position: -200% center; }
+        100% { background-position: 200% center; }
+    }
+    @keyframes badgeDotPulse {
+        0%, 100% { box-shadow: 0 0 4px rgba(14,165,233,0.4); }
+        50%      { box-shadow: 0 0 10px rgba(14,165,233,0.8), 0 0 20px rgba(14,165,233,0.3); }
+    }
+    @keyframes statusPulse {
+        0%, 100% { box-shadow: 0 0 4px rgba(74,222,128,0.4); }
+        50%      { box-shadow: 0 0 10px rgba(74,222,128,0.8), 0 0 20px rgba(74,222,128,0.3); }
     }
     .af-header {
         background: linear-gradient(135deg, #0c1220 0%, #0f2847 25%, #0c1e3a 50%, #112240 75%, #0c1220 100%);
@@ -71,39 +158,62 @@ st.markdown("""
         animation: headerShift 12s ease infinite;
         border: 1px solid rgba(14,165,233,0.2);
         border-radius: 16px;
-        padding: 1.4rem 1.6rem;
+        padding: 1.6rem 1.8rem;
         margin-bottom: 0.75rem;
         position: relative;
         overflow: hidden;
+        backdrop-filter: blur(16px);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.05),
+            0 4px 24px rgba(0,0,0,0.3),
+            0 0 0 1px rgba(14,165,233,0.08);
     }
     .af-header::before {
         content: "";
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: radial-gradient(ellipse at 20% 50%, rgba(14,165,233,0.08) 0%, transparent 60%);
+        background: radial-gradient(ellipse at 20% 50%, rgba(14,165,233,0.1) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .af-header::after {
+        content: "";
+        position: absolute;
+        top: 0; left: -100%; right: 0; bottom: 0;
+        width: 300%;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 45%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 55%, transparent 100%);
+        animation: shimmer 8s ease-in-out infinite;
         pointer-events: none;
     }
     .af-header h1 {
-        margin: 0 0 0.2rem 0;
-        font-size: 1.7rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #e2e8f0, #f8fafc);
+        margin: 0 0 0.3rem 0;
+        font-size: clamp(1.4rem, 3.5vw, 1.85rem);
+        font-weight: 900;
+        background: linear-gradient(90deg, #e2e8f0 0%, #0ea5e9 30%, #8b5cf6 60%, #38bdf8 80%, #e2e8f0 100%);
+        background-size: 300% 100%;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         letter-spacing: -0.03em;
+        line-height: 1.2;
+        animation: shimmer 6s ease infinite;
+        position: relative;
+        z-index: 1;
     }
     .af-header .af-tagline {
         font-size: 0.82rem;
         color: #64748b;
-        margin: 0 0 0.65rem 0;
+        margin: 0 0 0.75rem 0;
         font-weight: 500;
-        letter-spacing: 0.01em;
+        letter-spacing: 0.02em;
+        position: relative;
+        z-index: 1;
     }
     .af-badge-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.35rem;
+        gap: 0.4rem;
+        position: relative;
+        z-index: 1;
     }
     .af-badge {
         display: inline-flex;
@@ -113,20 +223,52 @@ st.markdown("""
         color: #38bdf8;
         border: 1px solid rgba(14,165,233,0.18);
         border-radius: 999px;
-        padding: 0.2rem 0.65rem;
+        padding: 0.22rem 0.7rem;
         font-size: 0.68rem;
         font-weight: 600;
         letter-spacing: 0.02em;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(8px);
+        transition: all 0.25s ease;
+    }
+    .af-badge:hover {
+        background: rgba(14,165,233,0.14);
+        border-color: rgba(14,165,233,0.35);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 12px rgba(14,165,233,0.15);
     }
     .af-badge .af-badge-dot {
         width: 6px; height: 6px;
         border-radius: 50%;
         background: #0ea5e9;
-        box-shadow: 0 0 6px rgba(14,165,233,0.6);
+        animation: badgeDotPulse 2s ease infinite;
+    }
+    .af-badge-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: rgba(74,222,128,0.06);
+        color: #4ade80;
+        border: 1px solid rgba(74,222,128,0.18);
+        border-radius: 999px;
+        padding: 0.22rem 0.7rem;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+    .af-badge-status .af-status-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #4ade80;
+        animation: statusPulse 2s ease infinite;
     }
 
-    /* ── Example question cards ── */
+    /* ══════════════════════════════════════════════════════════════════
+       §4 + §5  EXAMPLE QUESTION CARDS WITH STAGGERED ENTRANCE
+       ══════════════════════════════════════════════════════════════════ */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
     .af-examples-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -134,31 +276,48 @@ st.markdown("""
         margin: 0.5rem 0 1rem 0;
     }
     .af-example-card {
-        background: rgba(15,23,42,0.5);
+        background: rgba(15,23,42,0.4);
         border: 1px solid rgba(14,165,233,0.12);
-        border-radius: 12px;
-        padding: 0.8rem 1rem;
+        border-radius: 14px;
+        padding: 0.9rem 1.1rem;
         cursor: pointer;
-        transition: all 0.25s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+        backdrop-filter: blur(12px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
     }
     .af-example-card:hover {
-        border-color: rgba(14,165,233,0.45);
-        background: rgba(15,23,42,0.7);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(14,165,233,0.1);
+        border-color: rgba(14,165,233,0.5);
+        background: rgba(15,23,42,0.6);
+        transform: translateY(-3px);
+        box-shadow:
+            0 0 0 1px rgba(14,165,233,0.25),
+            0 8px 32px rgba(14,165,233,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.06);
     }
     .af-example-card::after {
         content: "";
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: radial-gradient(circle at 0% 0%, rgba(14,165,233,0.06) 0%, transparent 50%);
+        background: radial-gradient(circle at 0% 0%, rgba(14,165,233,0.08) 0%, transparent 50%);
         pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .af-example-card:hover::after {
+        background: radial-gradient(circle at 0% 0%, rgba(14,165,233,0.14) 0%, transparent 60%);
     }
     .af-example-icon {
-        font-size: 1.1rem;
-        margin-bottom: 0.25rem;
+        font-size: 1.3rem;
+        margin-bottom: 0.3rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 10px;
+        background: rgba(14,165,233,0.08);
+        border: 1px solid rgba(14,165,233,0.12);
     }
     .af-example-label {
         font-size: 0.72rem;
@@ -166,35 +325,271 @@ st.markdown("""
         color: #38bdf8;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        margin-bottom: 0.15rem;
+        margin-bottom: 0.2rem;
     }
     .af-example-text {
         font-size: 0.82rem;
         color: #94a3b8;
-        line-height: 1.35;
+        line-height: 1.4;
+    }
+    .af-example-arrow {
+        position: absolute;
+        right: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%) translateX(8px);
+        opacity: 0;
+        color: #38bdf8;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    .af-example-card:hover .af-example-arrow {
+        opacity: 0.6;
+        transform: translateY(-50%) translateX(0);
     }
 
-    /* ── Override Streamlit buttons to look like our cards ── */
+    /* ── Staggered entrance for Streamlit buttons (example cards) ── */
     div[data-testid="stVerticalBlock"] button[kind="secondary"] {
-        border: 1px solid rgba(14,165,233,0.15);
-        border-radius: 12px;
-        transition: all 0.25s ease;
+        border: 1px solid rgba(14,165,233,0.12);
+        border-radius: 14px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         text-align: left;
         font-size: 0.82rem;
-        padding: 0.7rem 0.9rem;
+        padding: 0.8rem 1rem;
         background: rgba(15,23,42,0.4);
+        backdrop-filter: blur(12px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+        animation: fadeInUp 0.5s ease both;
     }
     div[data-testid="stVerticalBlock"] button[kind="secondary"]:hover {
         border-color: rgba(14,165,233,0.5);
-        background: rgba(14,165,233,0.06);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(14,165,233,0.08);
+        background: rgba(14,165,233,0.08);
+        transform: translateY(-3px);
+        box-shadow:
+            0 0 0 1px rgba(14,165,233,0.25),
+            0 8px 32px rgba(14,165,233,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    /* Staggered animation delays for the 6 example cards */
+    div[data-testid="stVerticalBlock"] > div:nth-child(1) button[kind="secondary"] { animation-delay: 0s; }
+    div[data-testid="stVerticalBlock"] > div:nth-child(2) button[kind="secondary"] { animation-delay: 0.08s; }
+    div[data-testid="stVerticalBlock"] > div:nth-child(3) button[kind="secondary"] { animation-delay: 0.16s; }
+    div[data-testid="stVerticalBlock"] > div:nth-child(4) button[kind="secondary"] { animation-delay: 0.24s; }
+    div[data-testid="stVerticalBlock"] > div:nth-child(5) button[kind="secondary"] { animation-delay: 0.32s; }
+    div[data-testid="stVerticalBlock"] > div:nth-child(6) button[kind="secondary"] { animation-delay: 0.40s; }
+
+    /* ══════════════════════════════════════════════════════════════════
+       §6  POLISHED CHAT BUBBLES
+       ══════════════════════════════════════════════════════════════════ */
+    @keyframes messageSlideIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .stChatMessage {
+        border-radius: 16px;
+        border: 1px solid rgba(148,163,184,0.06);
+        padding: 1.1rem;
+        animation: messageSlideIn 0.35s ease both;
+        backdrop-filter: blur(8px);
+        transition: border-color 0.2s ease;
+    }
+    .stChatMessage:hover {
+        border-color: rgba(148,163,184,0.12);
+    }
+    /* User message accent */
+    .stChatMessage:has([data-testid="chatAvatarIcon-user"]) {
+        border-left: 3px solid rgba(14,165,233,0.4);
+        background: rgba(14,165,233,0.02);
+    }
+    /* Assistant message accent */
+    .stChatMessage:has([data-testid="chatAvatarIcon-assistant"]) {
+        border-left: 3px solid rgba(16,185,129,0.4);
+        background: rgba(16,185,129,0.02);
+    }
+    .stChatMessage [data-testid="chatAvatarIcon-user"] {
+        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+        box-shadow: 0 2px 8px rgba(14,165,233,0.3);
+    }
+    .stChatMessage [data-testid="chatAvatarIcon-assistant"] {
+        background: linear-gradient(135deg, #10b981, #34d399);
+        box-shadow: 0 2px 8px rgba(16,185,129,0.3);
     }
 
-    /* ── Sidebar ── */
+    /* ══════════════════════════════════════════════════════════════════
+       §7  ENHANCED TOOL ACTIVITY INDICATOR
+       ══════════════════════════════════════════════════════════════════ */
+    @keyframes toolSpin {
+        to { transform: rotate(360deg); }
+    }
+    @keyframes toolPulse {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
+    }
+    @keyframes toolProgressSweep {
+        0%   { background-position: -200% center; }
+        100% { background-position: 200% center; }
+    }
+    .af-tool-active {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+        color: #38bdf8;
+        font-weight: 600;
+        animation: toolPulse 1.5s ease infinite;
+        padding: 0.5rem 0.8rem;
+        background: rgba(14,165,233,0.06);
+        border: 1px solid rgba(14,165,233,0.15);
+        border-radius: 10px;
+        backdrop-filter: blur(8px);
+        position: relative;
+        overflow: hidden;
+    }
+    .af-tool-active::before {
+        content: "";
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        border: 2px solid rgba(14,165,233,0.2);
+        border-top-color: #0ea5e9;
+        animation: toolSpin 0.8s linear infinite;
+        flex-shrink: 0;
+    }
+    .af-tool-active::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #0ea5e9, #38bdf8, transparent);
+        background-size: 200% 100%;
+        animation: toolProgressSweep 1.5s ease-in-out infinite;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       §8  CONFIDENCE GAUGE + METADATA BAR
+       ══════════════════════════════════════════════════════════════════ */
+    .af-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        align-items: center;
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+        padding: 0.55rem 0.75rem;
+        border-top: 1px solid rgba(148,163,184,0.08);
+        background: rgba(15,23,42,0.35);
+        backdrop-filter: blur(12px);
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.04);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .af-meta .af-pill {
+        background: rgba(14,165,233,0.1);
+        color: #7dd3fc;
+        border: 1px solid rgba(14,165,233,0.18);
+        border-radius: 999px;
+        padding: 0.14rem 0.6rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .af-meta .af-pill:hover {
+        background: rgba(14,165,233,0.18);
+        border-color: rgba(14,165,233,0.35);
+    }
+    .af-meta .af-latency {
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 0.65rem;
+        color: #475569;
+    }
+    .af-confidence-high { color: #4ade80; font-weight: 600; }
+    .af-confidence-mid  { color: #fbbf24; font-weight: 600; }
+    .af-confidence-low  { color: #f87171; font-weight: 600; }
+
+    /* Confidence gauge bar */
+    .af-conf-gauge {
+        display: inline-block;
+        width: 56px;
+        height: 5px;
+        background: rgba(148,163,184,0.12);
+        border-radius: 3px;
+        overflow: hidden;
+        vertical-align: middle;
+        margin-right: 0.3rem;
+        position: relative;
+    }
+    .af-conf-fill {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .af-conf-fill-high {
+        background: linear-gradient(90deg, #10b981, #4ade80);
+        box-shadow: 0 0 6px rgba(74,222,128,0.4);
+    }
+    .af-conf-fill-mid {
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        box-shadow: 0 0 6px rgba(251,191,36,0.4);
+    }
+    .af-conf-fill-low {
+        background: linear-gradient(90deg, #ef4444, #f87171);
+        box-shadow: 0 0 6px rgba(248,113,113,0.4);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       §9  VERIFICATION BADGES
+       ══════════════════════════════════════════════════════════════════ */
+    .af-verification {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 0.35rem;
+        padding: 0.45rem 0.65rem;
+        background: rgba(15,23,42,0.35);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 8px;
+        font-size: 0.64rem;
+        color: #64748b;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .af-v-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(148,163,184,0.06);
+        border: 1px solid rgba(148,163,184,0.08);
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+    .af-v-item:hover {
+        background: rgba(148,163,184,0.1);
+    }
+    .af-v-pass {
+        color: #4ade80;
+        background: rgba(74,222,128,0.06);
+        border-color: rgba(74,222,128,0.15);
+    }
+    .af-v-warn {
+        color: #fbbf24;
+        background: rgba(251,191,36,0.06);
+        border-color: rgba(251,191,36,0.15);
+    }
+    .af-v-fail {
+        color: #f87171;
+        background: rgba(248,113,113,0.06);
+        border-color: rgba(248,113,113,0.15);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       §10  SIDEBAR VISUAL OVERHAUL
+       ══════════════════════════════════════════════════════════════════ */
     section[data-testid="stSidebar"] {
-        border-right: 1px solid rgba(14,165,233,0.08);
-        background: linear-gradient(180deg, rgba(12,18,32,0.95) 0%, rgba(15,23,42,0.95) 100%);
+        border-right: 1px solid rgba(14,165,233,0.1);
+        background: linear-gradient(180deg, rgba(12,18,32,0.97) 0%, rgba(15,23,42,0.97) 100%);
+        backdrop-filter: blur(20px);
     }
     section[data-testid="stSidebar"] .stMarkdown h3 {
         font-size: 0.68rem;
@@ -204,32 +599,81 @@ st.markdown("""
         margin-bottom: 0.4rem;
         font-weight: 700;
     }
+    /* Gradient divider to replace plain st.divider */
+    section[data-testid="stSidebar"] hr {
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent 0%, rgba(14,165,233,0.25) 50%, transparent 100%);
+        margin: 0.6rem 0;
+    }
     .af-sidebar-section {
         background: rgba(14,165,233,0.04);
-        border: 1px solid rgba(14,165,233,0.08);
-        border-radius: 10px;
+        border: 1px solid rgba(14,165,233,0.1);
+        border-radius: 12px;
         padding: 0.75rem;
         margin-bottom: 0.5rem;
+        backdrop-filter: blur(8px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+        transition: border-color 0.2s ease;
+    }
+    .af-sidebar-section:hover {
+        border-color: rgba(14,165,233,0.2);
     }
     .af-tool-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0.3rem;
+        gap: 0.35rem;
     }
     .af-tool-chip {
         font-size: 0.68rem;
         color: #94a3b8;
         background: rgba(14,165,233,0.06);
         border: 1px solid rgba(14,165,233,0.1);
-        border-radius: 6px;
-        padding: 0.25rem 0.5rem;
+        border-radius: 8px;
+        padding: 0.3rem 0.5rem;
         text-align: center;
         font-weight: 500;
+        transition: all 0.25s ease;
+        cursor: default;
+    }
+    .af-tool-chip:hover {
+        background: rgba(14,165,233,0.12);
+        border-color: rgba(14,165,233,0.25);
+        color: #bae6fd;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(14,165,233,0.1);
     }
     .af-tool-chip.af-bounty {
         color: #fbbf24;
         background: rgba(251,191,36,0.06);
         border-color: rgba(251,191,36,0.15);
+    }
+    .af-tool-chip.af-bounty:hover {
+        background: rgba(251,191,36,0.12);
+        border-color: rgba(251,191,36,0.3);
+        color: #fde68a;
+        box-shadow: 0 2px 8px rgba(251,191,36,0.1);
+    }
+
+    /* ── Sidebar status indicator ── */
+    .af-sidebar-status {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.65rem;
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #4ade80;
+        background: rgba(74,222,128,0.04);
+        border: 1px solid rgba(74,222,128,0.12);
+    }
+    .af-sidebar-status .af-live-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: #4ade80;
+        animation: statusPulse 2s ease infinite;
     }
 
     /* ── Sidebar metrics ── */
@@ -263,10 +707,12 @@ st.markdown("""
         height: 100%;
         border-radius: 3px;
         background: linear-gradient(90deg, #0ea5e9, #38bdf8);
-        transition: width 0.4s ease;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 4px rgba(14,165,233,0.3);
     }
     .af-tool-bar-fill.af-bounty-bar {
         background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        box-shadow: 0 0 4px rgba(251,191,36,0.3);
     }
     .af-tool-bar-count {
         min-width: 18px;
@@ -286,6 +732,8 @@ st.markdown("""
         font-size: 0.72rem;
         font-weight: 600;
         margin: 0.3rem 0;
+        backdrop-filter: blur(8px);
+        transition: all 0.2s ease;
     }
     .af-escalation-safe {
         background: rgba(74,222,128,0.06);
@@ -298,129 +746,111 @@ st.markdown("""
         color: #f87171;
     }
 
-    /* ── Verification scorecard (inline) ── */
-    .af-verification {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 0.35rem;
-        padding: 0.4rem 0.6rem;
-        background: rgba(15,23,42,0.4);
-        border: 1px solid rgba(148,163,184,0.06);
-        border-radius: 6px;
-        font-size: 0.65rem;
-        color: #64748b;
-    }
-    .af-v-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-    .af-v-pass { color: #4ade80; }
-    .af-v-warn { color: #fbbf24; }
-    .af-v-fail { color: #f87171; }
-
-    /* ── Chat bubbles ── */
-    .stChatMessage {
-        border-radius: 14px;
-        border: 1px solid rgba(148,163,184,0.06);
-    }
-    .stChatMessage [data-testid="chatAvatarIcon-user"] {
-        background: linear-gradient(135deg, #0ea5e9, #38bdf8);
-    }
-    .stChatMessage [data-testid="chatAvatarIcon-assistant"] {
-        background: linear-gradient(135deg, #10b981, #34d399);
-    }
-
-    /* ── Metadata bar ── */
-    .af-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
-        align-items: center;
-        font-size: 0.72rem;
-        color: #64748b;
-        margin-top: 0.5rem;
-        padding: 0.5rem 0.6rem;
-        border-top: 1px solid rgba(148,163,184,0.08);
-        background: rgba(15,23,42,0.3);
-        border-radius: 8px;
-    }
-    .af-meta .af-pill {
-        background: rgba(14,165,233,0.1);
-        color: #7dd3fc;
-        border: 1px solid rgba(14,165,233,0.15);
-        border-radius: 999px;
-        padding: 0.12rem 0.55rem;
-        font-size: 0.65rem;
-        font-weight: 600;
-    }
-    .af-meta .af-latency {
-        font-family: 'SF Mono', 'Fira Code', monospace;
-        font-size: 0.65rem;
-        color: #475569;
-    }
-    .af-confidence-high { color: #4ade80; font-weight: 600; }
-    .af-confidence-mid  { color: #fbbf24; font-weight: 600; }
-    .af-confidence-low  { color: #f87171; font-weight: 600; }
-
-    /* ── Tool activity pulse ── */
-    @keyframes toolPulse {
-        0%, 100% { opacity: 0.6; }
-        50% { opacity: 1; }
-    }
-    .af-tool-active {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.78rem;
-        color: #38bdf8;
-        font-weight: 600;
-        animation: toolPulse 1.5s ease infinite;
-    }
-    .af-tool-active::before {
-        content: "";
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background: #0ea5e9;
-        box-shadow: 0 0 8px rgba(14,165,233,0.6);
-    }
-
-    /* ── Disclaimer bar ── */
+    /* ══════════════════════════════════════════════════════════════════
+       §11  DISCLAIMER BAR (glass-morphism)
+       ══════════════════════════════════════════════════════════════════ */
     .af-disclaimer {
-        background: rgba(234,179,8,0.06);
+        background: rgba(234,179,8,0.05);
         border: 1px solid rgba(234,179,8,0.15);
-        border-radius: 10px;
-        padding: 0.6rem 0.9rem;
+        border-radius: 12px;
+        padding: 0.65rem 1rem;
         font-size: 0.75rem;
         color: #a3a3a3;
         margin-bottom: 0.75rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        backdrop-filter: blur(12px);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
     }
     .af-disclaimer strong { color: #fbbf24; }
 
-    /* ── Welcome heading ── */
+    /* ══════════════════════════════════════════════════════════════════
+       §12  WELCOME HEADING + CHAT INPUT
+       ══════════════════════════════════════════════════════════════════ */
+    @keyframes welcomeFadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
     .af-welcome {
         text-align: center;
-        margin: 1rem 0 0.25rem 0;
+        margin: 1.5rem 0 0.5rem 0;
+        animation: welcomeFadeIn 0.6s ease both;
     }
     .af-welcome h2 {
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #e2e8f0;
+        font-size: clamp(1.1rem, 3vw, 1.35rem);
+        font-weight: 800;
+        background: linear-gradient(135deg, #e2e8f0, #f8fafc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin: 0;
+        line-height: 1.3;
     }
     .af-welcome p {
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         color: #64748b;
-        margin: 0.25rem 0 0 0;
+        margin: 0.35rem 0 0 0;
+        font-weight: 400;
     }
 
-    /* ── Chat input ── */
+    /* Chat input */
+    .stChatInput {
+        transition: all 0.3s ease;
+    }
     .stChatInput textarea {
-        border-radius: 12px;
+        border-radius: 14px;
+        font-size: 0.88rem;
+        padding: 0.8rem 1rem;
+        background: rgba(15,23,42,0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(14,165,233,0.12);
+        transition: all 0.3s ease;
+    }
+    .stChatInput textarea:focus {
+        border-color: rgba(14,165,233,0.4);
+        box-shadow:
+            0 0 0 3px rgba(14,165,233,0.1),
+            0 4px 16px rgba(14,165,233,0.08);
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       §13  REDUCED MOTION SUPPORT
+       ══════════════════════════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       §14  RESPONSIVE LAYOUT
+       ══════════════════════════════════════════════════════════════════ */
+    @media (max-width: 640px) {
+        .af-examples-grid {
+            grid-template-columns: 1fr;
+        }
+        .af-badge-row {
+            gap: 0.25rem;
+        }
+        .af-badge {
+            font-size: 0.62rem;
+            padding: 0.18rem 0.5rem;
+        }
+        .af-header {
+            padding: 1.2rem 1rem;
+        }
+        .af-header h1 {
+            font-size: 1.3rem;
+        }
+        .af-tool-grid {
+            grid-template-columns: 1fr;
+        }
+        div[data-testid="stVerticalBlock"] button[kind="secondary"] {
+            min-height: 44px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -494,6 +924,12 @@ EXAMPLE_QUESTIONS = [
 def main():
     init_session()
 
+    # ── Ambient aurora background ─────────────────────────────────────
+    st.markdown(
+        '<div class="af-aurora"></div><div class="af-aurora-2"></div>',
+        unsafe_allow_html=True,
+    )
+
     # ── Branded header ──────────────────────────────────────────────────
     st.markdown("""
     <div class="af-header">
@@ -505,6 +941,7 @@ def main():
             <span class="af-badge">9 Tools</span>
             <span class="af-badge">5-Layer Verification</span>
             <span class="af-badge">FDA Recall Monitoring</span>
+            <span class="af-badge-status"><span class="af-status-dot"></span> System Online</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -519,6 +956,10 @@ def main():
 
     # ── Sidebar ─────────────────────────────────────────────────────────
     with st.sidebar:
+        st.markdown(
+            '<div class="af-sidebar-status"><span class="af-live-dot"></span> AgentForge Active</div>',
+            unsafe_allow_html=True,
+        )
         st.markdown("### Core Tools")
         st.markdown("""
         <div class="af-sidebar-section">
@@ -702,12 +1143,24 @@ def _render_metadata(meta: dict, msg_index: int):
     else:
         conf_cls = "af-confidence-low"
 
+    # Confidence gauge fill class
+    if confidence >= 0.7:
+        gauge_cls = "af-conf-fill-high"
+    elif confidence >= 0.5:
+        gauge_cls = "af-conf-fill-mid"
+    else:
+        gauge_cls = "af-conf-fill-low"
+
     # Build HTML metadata bar
     pills_html = "".join(f'<span class="af-pill">{t}</span>' for t in tools)
     parts = []
     if tools:
         parts.append(pills_html)
-    parts.append(f'<span class="{conf_cls}">Confidence {confidence:.0%}</span>')
+    conf_pct = int(confidence * 100)
+    parts.append(
+        f'<span class="af-conf-gauge"><span class="af-conf-fill {gauge_cls}" style="width:{conf_pct}%"></span></span>'
+        f'<span class="{conf_cls}">{confidence:.0%}</span>'
+    )
     if latency:
         parts.append(f'<span class="af-latency">{latency:.0f}ms</span>')
     if sources:
