@@ -52,6 +52,27 @@ MOCK_PLANS = {
         "out_of_pocket_max": {"individual": 0, "family": 0},
         "notes": "Medicare has no out-of-pocket maximum. Supplemental insurance recommended.",
     },
+    "BUCKEYE_MEDICAID": {
+        "plan_name": "Buckeye Health Plan (Medicaid HMO)",
+        "plan_id": "BUCKEYE-HMO-2026",
+        "type": "Medicaid HMO",
+        "coverages": {
+            "99213": {"description": "Office visit, established patient (Level 3)", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "99214": {"description": "Office visit, established patient (Level 4)", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "99203": {"description": "Office visit, new patient (Level 3)", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "90834": {"description": "Psychotherapy, 45 minutes", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "71046": {"description": "Chest X-ray, 2 views", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "93000": {"description": "Electrocardiogram (ECG/EKG)", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "27447": {"description": "Total knee replacement", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": True},
+            "99285": {"description": "Emergency department visit (high severity)", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "70553": {"description": "MRI brain without and with contrast", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": True},
+            "80053": {"description": "Comprehensive metabolic panel (blood work)", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+            "85025": {"description": "Complete blood count (CBC)", "covered": True, "copay": 0, "coinsurance": 0.0, "deductible_applies": False, "prior_auth": False},
+        },
+        "deductible": {"individual": 0, "family": 0},
+        "out_of_pocket_max": {"individual": 0, "family": 0},
+        "notes": "Medicaid managed care plan. Most services have $0 copay. Referrals may be required for specialists.",
+    },
     "AETNA_HMO": {
         "plan_name": "Aetna HMO Select",
         "plan_id": "AETNA-HMO-2026",
@@ -169,9 +190,11 @@ async def insurance_coverage_check(procedure: str, plan_name: str = "") -> str:
 
     if not plans:
         return (
-            f"No insurance plans found matching '{plan_name}'.\n"
-            "Available plans in our system: Blue Cross PPO, Medicare, Aetna HMO.\n"
-            "Please check with your insurance provider for specific coverage details."
+            f"No insurance plan coverage found matching '{plan_name}'.\n"
+            "Available plans in our system: Blue Cross PPO, Medicare, Buckeye Medicaid HMO, Aetna HMO.\n"
+            "Please check with your insurance provider for specific copay and deductible details.\n\n"
+            "[INCLUDE THIS SOURCE LINE IN YOUR RESPONSE]\n"
+            "Source: AgentForge Insurance Coverage Database (Demo Data)"
         )
 
     lines = [f"Insurance Coverage Check: {procedure}"]
