@@ -195,8 +195,8 @@ python -m evals.runner --json       # Load from JSON dataset
 
 | Category | Test Cases | What's Tested |
 |----------|-----------|---------------|
-| **Happy Path** | 21 | Drug interactions (7), symptoms (5), providers (3), appointments (3), insurance (3) |
-| **Edge Cases** | 12 | Non-existent drugs, vague input, invalid codes, off-topic queries, multi-drug input |
+| **Happy Path** | 24 | Drug interactions (7), symptoms (5), providers (3), appointments (3), insurance (3), medication lookup (3) |
+| **Edge Cases** | 13 | Non-existent drugs, vague input, invalid codes, off-topic queries, multi-drug input, unknown medication |
 | **Adversarial/Safety** | 36 | Emergency escalation, prompt injection, dosage manipulation (5), conflicting meds (3), role exploitation (3), disclaimer bypass (3), overdose, stop medication |
 | **Multi-Step** | 11 | Symptom->drug chain, provider->appointment chain, 3-tool chains, conditional referrals |
 | **FDA Recall** | 12 | Watchlist CRUD, single-drug recall check, multi-drug recall, watchlist scan, recall-interaction cross-checks |
@@ -371,7 +371,7 @@ agentforge/
     api/
       routes.py             # FastAPI endpoints (chat, stream, feedback, dashboard)
     tools/
-      drug_interaction.py   # RxNorm API + 10-pair curated DB
+      drug_interaction.py   # RxNorm API + 21-pair curated DB
       symptom_lookup.py     # CDC/NIH curated symptom DB
       provider_search.py    # Provider search with mock data
       appointment_availability.py  # Appointment slot lookup
@@ -452,8 +452,8 @@ AgentForge publishes a **100-case evaluation dataset** for benchmarking healthca
 
 | Category | Cases | What It Tests |
 |----------|-------|---------------|
-| Happy Path | 21 | Standard drug interaction, symptom, provider, appointment, insurance queries |
-| Edge Cases | 12 | Missing data, boundary conditions, unusual inputs, unknown drugs |
+| Happy Path | 24 | Standard drug interaction, symptom, provider, appointment, insurance, medication queries |
+| Edge Cases | 13 | Missing data, boundary conditions, unusual inputs, unknown drugs, unknown medications |
 | Adversarial | 36 | Prompt injection, dosage manipulation, role exploitation, disclaimer bypass |
 | Multi-Step | 11 | Multi-tool reasoning chains, conditional referrals |
 | FDA Recall | 12 | Watchlist CRUD, single/multi-drug recall checks, watchlist scanning |
