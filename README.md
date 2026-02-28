@@ -2,7 +2,8 @@
 
 ![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Tests: 165 passing](https://img.shields.io/badge/tests-165_passing-brightgreen.svg)
+[![Tests](https://github.com/Jojobeans1981/langchain-healthcare-tools/actions/workflows/tests.yml/badge.svg)](https://github.com/Jojobeans1981/langchain-healthcare-tools/actions/workflows/tests.yml)
+![Coverage: 85%](https://img.shields.io/badge/coverage-85%25_safety--critical-brightgreen.svg)
 ![Tools: 9](https://img.shields.io/badge/tools-9_healthcare-orange.svg)
 ![Eval Cases: 96](https://img.shields.io/badge/eval_cases-96-blueviolet.svg)
 
@@ -369,6 +370,7 @@ agentforge/
     test_routes.py          # 12 API endpoint unit tests
     test_drug_recall.py     # 17 drug recall/watchlist unit tests
     test_confidence_fallback.py  # 6 confidence fallback unit tests
+    test_openemr_live.py    # 7 live integration tests (skipped without OPENEMR_ENABLED=true)
   evals/
     test_cases.py           # 96 eval test case definitions
     runner.py               # Async eval runner with reporting
@@ -394,13 +396,29 @@ Live at: [https://agentforge-0p0k.onrender.com/](https://agentforge-0p0k.onrende
 
 ## OpenEMR Integration
 
-AgentForge is designed to integrate with OpenEMR via its REST/FHIR APIs:
-- **REST API:** `/apis/default/api/` — patients, encounters, appointments, providers
-- **FHIR R4:** `/apis/default/fhir/` — 30+ FHIR resources (Patient, Medication, etc.)
-- **OAuth2:** `/oauth2/default/` — authentication for API access
-- **Docker dev env:** `docker/development-easy/` at `localhost:8300` (`admin`/`pass`)
+AgentForge connects to OpenEMR via its REST API with OAuth2 authentication:
 
-Currently uses mock data with transparent fallback to live OpenEMR APIs when available.
+- **REST API:** `/apis/default/api/` — practitioners, patients, appointments, insurance
+- **OAuth2:** Password grant via `/oauth2/default/token` — auto-registers a client on first use
+- **Docker dev env:** `docker/development-easy/` at `https://localhost:9300` (`admin`/`pass`)
+
+**Enable live connection:**
+
+```bash
+# In agentforge/.env
+OPENEMR_ENABLED=true
+OPENEMR_BASE_URL=https://localhost:9300
+```
+
+When enabled, tools query OpenEMR first and fall back to mock data if unavailable. This means the system works identically in demo mode (no Docker) and live mode (with OpenEMR running).
+
+**Run live integration tests:**
+
+```bash
+OPENEMR_ENABLED=true python -m pytest tests/test_openemr_live.py -v
+```
+
+Tests verify OAuth2 authentication, practitioner/patient queries, and tool-level integration with live data.
 
 ---
 

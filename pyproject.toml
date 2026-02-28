@@ -36,6 +36,7 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "pytest-mock>=3.14",
+    "pytest-cov>=6.0",
     "ruff>=0.8",
 ]
 
@@ -49,3 +50,7 @@ target-version = "py311"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests", "evals"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: live integration tests requiring external services (OpenEMR Docker)",
+]
