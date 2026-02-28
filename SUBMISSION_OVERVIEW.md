@@ -208,8 +208,8 @@ This is live FDA data, returned in seconds, through a natural language interface
 
 | Metric | Value |
 |--------|-------|
-| Recall eval tests | 6/6 passing (100%) |
-| Drug recall unit tests | 12 passing |
+| Recall eval tests | 12/12 passing (100%) |
+| Drug recall unit tests | 17 passing |
 | FDA API uptime | 99.9% (federal API) |
 | Fallback on API failure | Graceful "no results" message |
 | Data freshness | Real-time (queries FDA on each request) |
@@ -235,4 +235,6 @@ This isn't a demo feature. It's a real clinical safety tool that addresses a gen
 | Bounty Feature | FDA Drug Recall Monitoring — watchlist + recall checker + cross-reference scanner |
 | Impact | Automated recall detection for 100K+ OpenEMR practices that currently have no solution |
 | Cost | $0 API costs, $7/month hosting |
+| Open Source Package | [langchain-healthcare-tools](https://github.com/Jojobeans1981/langchain-healthcare-tools) ([v0.1.0](https://github.com/Jojobeans1981/langchain-healthcare-tools/releases/tag/v0.1.0)) |
+| Eval Dataset | 96 cases, 6 categories, 9 tools ([healthcare_eval_dataset.json](evals/healthcare_eval_dataset.json)) |
 | Live Demo | https://agentforge-0p0k.onrender.com/ |
