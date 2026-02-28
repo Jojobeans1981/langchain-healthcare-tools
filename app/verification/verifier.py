@@ -327,6 +327,11 @@ def _score_confidence(response: str, tools_used: list[str], result: Verification
     confidence += multi_tool_boost
     breakdown["multi_tool_boost"] = multi_tool_boost
 
+    # Comprehensive report boost (3+ tools = clinical decision report)
+    comprehensive_boost = 0.05 if len(tools_used) >= 3 else 0.0
+    confidence += comprehensive_boost
+    breakdown["comprehensive_report_boost"] = comprehensive_boost
+
     # Grounding boost/penalty
     grounding_penalty = 0.0
     if not result.source_grounding_pass:

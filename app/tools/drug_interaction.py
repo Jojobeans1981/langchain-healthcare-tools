@@ -113,6 +113,101 @@ KNOWN_INTERACTIONS = {
         "source": "FDA Drug Safety Communication, NIH DailyMed",
         "clinical_action": "Avoid potassium supplements unless directed by physician. Monitor serum potassium.",
     },
+    frozenset(["metformin", "ibuprofen"]): {
+        "severity": "Moderate",
+        "description": (
+            "NSAIDs like ibuprofen can impair kidney function and reduce metformin clearance, "
+            "potentially increasing the risk of lactic acidosis. This risk is higher in patients "
+            "with pre-existing renal impairment."
+        ),
+        "source": "NIH DailyMed, American Diabetes Association",
+        "clinical_action": "Use with caution. Monitor kidney function. Consider acetaminophen as alternative.",
+    },
+    frozenset(["atorvastatin", "amiodarone"]): {
+        "severity": "High",
+        "description": (
+            "Amiodarone inhibits CYP3A4 and increases atorvastatin levels, raising the risk of "
+            "myopathy and rhabdomyolysis. Atorvastatin dose should not exceed 40mg/day with amiodarone."
+        ),
+        "source": "FDA Drug Safety Communication",
+        "clinical_action": "Limit atorvastatin to 40mg/day. Monitor for muscle pain, tenderness, or weakness.",
+    },
+    frozenset(["warfarin", "omeprazole"]): {
+        "severity": "Moderate",
+        "description": (
+            "Omeprazole may increase warfarin levels by inhibiting CYP2C19, leading to increased "
+            "INR and bleeding risk. The interaction is generally mild but clinically relevant."
+        ),
+        "source": "FDA Drug Safety Communication, NIH DailyMed",
+        "clinical_action": "Monitor INR closely when starting or stopping omeprazole. Consider pantoprazole as alternative.",
+    },
+    frozenset(["lisinopril", "ibuprofen"]): {
+        "severity": "Moderate",
+        "description": (
+            "NSAIDs like ibuprofen reduce the antihypertensive effect of ACE inhibitors and "
+            "can impair kidney function, especially in patients with existing renal issues or dehydration."
+        ),
+        "source": "FDA Drug Safety Communication, American Heart Association",
+        "clinical_action": "Avoid long-term NSAID use with ACE inhibitors. Monitor blood pressure and kidney function.",
+    },
+    frozenset(["metformin", "atorvastatin"]): {
+        "severity": "Low",
+        "description": (
+            "Metformin and atorvastatin are commonly prescribed together for patients with diabetes "
+            "and hyperlipidemia. No significant pharmacokinetic interaction. Both are generally well tolerated."
+        ),
+        "source": "NIH DailyMed, American Diabetes Association",
+        "clinical_action": "Generally safe combination. Monitor blood glucose and lipid levels as usual.",
+    },
+    frozenset(["amlodipine", "simvastatin"]): {
+        "severity": "High",
+        "description": (
+            "Amlodipine increases simvastatin exposure by inhibiting CYP3A4. The FDA recommends "
+            "limiting simvastatin to 20mg/day when co-administered with amlodipine due to risk "
+            "of rhabdomyolysis."
+        ),
+        "source": "FDA Drug Safety Communication",
+        "clinical_action": "Do not exceed simvastatin 20mg/day. Consider switching to pravastatin or rosuvastatin.",
+    },
+    frozenset(["omeprazole", "clopidogrel"]): {
+        "severity": "High",
+        "description": (
+            "Omeprazole strongly inhibits CYP2C19, reducing the conversion of clopidogrel to its "
+            "active metabolite by up to 45%. This significantly reduces the antiplatelet effect and "
+            "increases the risk of cardiovascular events."
+        ),
+        "source": "FDA Black Box Warning, ACC/AHA Guidelines",
+        "clinical_action": "AVOID combination. Use pantoprazole or famotidine instead if acid suppression needed.",
+    },
+    frozenset(["sertraline", "tramadol"]): {
+        "severity": "High",
+        "description": (
+            "Both sertraline and tramadol increase serotonin levels. The combination increases "
+            "the risk of serotonin syndrome (agitation, hyperthermia, tachycardia, muscle rigidity) "
+            "and may lower the seizure threshold."
+        ),
+        "source": "FDA Drug Safety Communication, NIH DailyMed",
+        "clinical_action": "Avoid combination if possible. Use alternative analgesics. Monitor for serotonin syndrome.",
+    },
+    frozenset(["lisinopril", "spironolactone"]): {
+        "severity": "High",
+        "description": (
+            "Both ACE inhibitors and spironolactone increase potassium levels. Combined use "
+            "significantly raises the risk of life-threatening hyperkalemia, especially in "
+            "patients with renal impairment."
+        ),
+        "source": "FDA Drug Safety Communication, ACC/AHA Heart Failure Guidelines",
+        "clinical_action": "If combination is necessary, monitor serum potassium within 1 week and regularly thereafter.",
+    },
+    frozenset(["warfarin", "amoxicillin"]): {
+        "severity": "Moderate",
+        "description": (
+            "Antibiotics including amoxicillin can disrupt gut flora that produce vitamin K, "
+            "potentially increasing INR and bleeding risk in patients on warfarin."
+        ),
+        "source": "NIH DailyMed, American College of Cardiology",
+        "clinical_action": "Monitor INR within 3-5 days of starting antibiotic. Temporary dose adjustment may be needed.",
+    },
 }
 
 
@@ -166,6 +261,45 @@ async def _resolve_rxcui(client: httpx.AsyncClient, drug_name: str) -> str | Non
     return None
 
 
+async def _check_rxnorm_interactions(client: httpx.AsyncClient, rxcuis: list[str]) -> list[dict]:
+    """Query the RxNorm interaction API for interactions between resolved RxCUIs."""
+    if len(rxcuis) < 2:
+        return []
+    interactions = []
+    try:
+        rxcui_str = "+".join(rxcuis)
+        resp = await client.get(
+            f"{RXNAV_BASE}/interaction/list.json",
+            params={"rxcuis": rxcui_str},
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            interaction_groups = data.get("fullInteractionTypeGroup", [])
+            for group in interaction_groups:
+                source = group.get("sourceName", "RxNorm")
+                for itype in group.get("fullInteractionType", []):
+                    for pair in itype.get("interactionPair", []):
+                        desc = pair.get("description", "")
+                        severity = pair.get("severity", "N/A")
+                        if severity == "N/A":
+                            severity = "Moderate"
+                        concepts = pair.get("interactionConcept", [])
+                        drug_names = [
+                            c.get("minConceptItem", {}).get("name", "Unknown")
+                            for c in concepts
+                        ]
+                        interactions.append({
+                            "drugs": drug_names,
+                            "severity": severity,
+                            "description": desc,
+                            "source": f"RxNorm / {source}",
+                            "clinical_action": "Consult your pharmacist or healthcare provider for guidance.",
+                        })
+    except Exception as e:
+        logger.warning("RxNorm interaction API error: %s", e)
+    return interactions
+
+
 @tool(args_schema=DrugInteractionInput)
 async def drug_interaction_check(drug_names: list[str]) -> str:
     """Check for drug-drug interactions between two or more medications.
@@ -180,20 +314,36 @@ async def drug_interaction_check(drug_names: list[str]) -> str:
 
     drug_list = ", ".join(drug_names)
 
+    # Track data provenance for transparent source attribution
+    used_local_db = False
+    used_rxnorm_api = False
+
     # Check local database first (most reliable for known pairs)
     interactions = _check_local_interactions(drug_names)
+    if interactions:
+        used_local_db = True
 
-    # Validate drug names via RxNorm API
+    # Validate drug names via RxNorm API and look up interactions if none found locally
     validated_drugs = []
     unvalidated_drugs = []
+    resolved_rxcuis = []
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             for name in drug_names:
                 rxcui = await _resolve_rxcui(client, name.strip())
                 if rxcui:
                     validated_drugs.append(name)
+                    resolved_rxcuis.append(rxcui)
+                    used_rxnorm_api = True
                 else:
                     unvalidated_drugs.append(name)
+
+            # If no local interactions found, try RxNorm interaction API
+            if not interactions and len(resolved_rxcuis) >= 2:
+                rxnorm_interactions = await _check_rxnorm_interactions(client, resolved_rxcuis)
+                if rxnorm_interactions:
+                    interactions.extend(rxnorm_interactions)
+                    used_rxnorm_api = True
     except Exception as e:
         logger.warning("RxNorm validation unavailable: %s", e)
         # If RxNorm is down, treat all as validated for local lookup
@@ -220,7 +370,11 @@ async def drug_interaction_check(drug_names: list[str]) -> str:
         )
         result_lines.append("")
         result_lines.append("[INCLUDE THIS SOURCE LINE IN YOUR RESPONSE]")
-        result_lines.append("Source: FDA Drug Safety Database, NIH DailyMed, RxNorm")
+        source_parts = []
+        if used_rxnorm_api:
+            source_parts.append("RxNorm API (Live)")
+        source_parts.append("AgentForge Drug Interaction Database (curated from FDA/NIH public data)")
+        result_lines.append(f"Source: {', '.join(source_parts)}")
         result_lines.append(
             "DISCLAIMER: This information is for educational purposes only. "
             "Always consult a pharmacist or healthcare professional before combining medications."
@@ -247,7 +401,14 @@ async def drug_interaction_check(drug_names: list[str]) -> str:
         lines.append("")
 
     lines.append("[INCLUDE THIS SOURCE LINE IN YOUR RESPONSE]")
-    lines.append("Source: FDA Drug Safety Database, NIH DailyMed, RxNorm (https://rxnav.nlm.nih.gov/)")
+    source_parts = []
+    if used_rxnorm_api:
+        source_parts.append("RxNorm API (Live — https://rxnav.nlm.nih.gov/)")
+    if used_local_db:
+        source_parts.append("AgentForge Drug Interaction Database (curated from FDA/NIH public data)")
+    if not source_parts:
+        source_parts.append("RxNorm API")
+    lines.append(f"Source: {', '.join(source_parts)}")
     lines.append(
         "DISCLAIMER: This information is for educational purposes only. "
         "Always consult a pharmacist or healthcare professional before making medication changes."

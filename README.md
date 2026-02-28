@@ -30,6 +30,30 @@ cd langchain-healthcare-tools
 pip install -e ".[server,dev]"
 ```
 
+## Use as a Library
+
+Drop the tools, prompt, and verifier into any LangGraph agent:
+
+```python
+from app.tools import ALL_TOOLS
+from app.agent.prompts import HEALTHCARE_AGENT_SYSTEM_PROMPT
+from app.verification.verifier import verify_response, post_process_response
+
+from langchain_groq import ChatGroq
+from langgraph.prebuilt import create_react_agent
+
+# Build a verified healthcare agent in 5 lines
+llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
+agent = create_react_agent(llm, ALL_TOOLS, prompt=HEALTHCARE_AGENT_SYSTEM_PROMPT)
+result = agent.invoke({"messages": [("user", "Check warfarin and aspirin interaction")]})
+
+# Verify the response before showing to users
+verification = verify_response(response_text, tools_used, original_query)
+safe_response = post_process_response(response_text, verification)
+```
+
+The system prompt includes a **Clinical Decision Engine** — when users describe complex patient scenarios (multiple medications + symptoms + specialist needs), the agent autonomously orchestrates all relevant tools and produces a structured Clinical Decision Report.
+
 ---
 
 ## Key Metrics

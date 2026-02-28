@@ -16,6 +16,18 @@ from app.tools.drug_recall import (
     scan_watchlist_recalls,
 )
 
+ALL_TOOLS = [
+    drug_interaction_check,
+    symptom_lookup,
+    provider_search,
+    appointment_availability,
+    insurance_coverage_check,
+    medication_lookup,
+    manage_watchlist,
+    check_drug_recalls,
+    scan_watchlist_recalls,
+]
+
 __all__ = [
     "drug_interaction_check",
     "symptom_lookup",
@@ -26,4 +38,5 @@ __all__ = [
     "manage_watchlist",
     "check_drug_recalls",
     "scan_watchlist_recalls",
+    "ALL_TOOLS",
 ]
