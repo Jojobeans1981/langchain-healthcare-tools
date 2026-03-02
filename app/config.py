@@ -53,5 +53,23 @@ class Settings(BaseSettings):
             raise ValueError(f"log_level must be one of {allowed}, got '{v}'")
         return v.upper()
 
+    @field_validator("openemr_base_url")
+    @classmethod
+    def validate_openemr_url(cls, v: str) -> str:
+        if v and not v.startswith(("http://", "https://")):
+            raise ValueError("openemr_base_url must start with http:// or https://")
+        return v.rstrip("/")
+
+    @field_validator("openemr_verify_ssl")
+    @classmethod
+    def warn_ssl_disabled(cls, v: bool) -> bool:
+        if not v:
+            import logging
+            logging.getLogger(__name__).warning(
+                "OpenEMR SSL verification is DISABLED. This is acceptable for "
+                "development but MUST be enabled in production."
+            )
+        return v
+
 
 settings = Settings()

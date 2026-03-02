@@ -44,21 +44,34 @@ st.markdown("""
         background-position: center;
         background-size: contain;
     }
-    /* ── Gauntlet AI G4 badge (bottom-right) ── */
-    .stApp::after {
-        content: "";
+    /* ── Gauntlet AI G4 badge (bottom-right, real element) ── */
+    .af-gauntlet-badge {
         position: fixed;
-        bottom: 18px;
-        right: 22px;
-        width: 140px;
-        height: 52px;
+        bottom: 16px;
+        right: 18px;
         pointer-events: none;
-        z-index: 1;
-        opacity: 0.18;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 70'%3E%3Ctext x='8' y='32' font-family='Inter,system-ui,sans-serif' font-weight='800' font-size='18' fill='%230ea5e9' letter-spacing='3'%3EGAUNTLET AI%3C/text%3E%3Crect x='8' y='42' width='56' height='24' rx='12' fill='none' stroke='%230ea5e9' stroke-width='2'/%3E%3Ctext x='36' y='60' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='900' font-size='16' fill='%230ea5e9'%3EG4%3C/text%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
+        z-index: 99999;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        text-align: right;
+        line-height: 1.3;
+    }
+    .af-gauntlet-badge .af-g-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        color: rgba(148, 163, 184, 0.6);
+        text-transform: uppercase;
+    }
+    .af-gauntlet-badge .af-g-cohort {
+        display: inline-block;
+        margin-top: 2px;
+        font-size: 13px;
+        font-weight: 900;
+        color: rgba(14, 165, 233, 0.7);
+        border: 1.5px solid rgba(14, 165, 233, 0.4);
+        border-radius: 10px;
+        padding: 1px 10px;
+        letter-spacing: 1px;
     }
 
     /* ══════════════════════════════════════════════════════════════════
@@ -1041,7 +1054,11 @@ def main():
 
     # ── Ambient aurora background ─────────────────────────────────────
     st.markdown(
-        '<div class="af-aurora"></div><div class="af-aurora-2"></div>',
+        '<div class="af-aurora"></div><div class="af-aurora-2"></div>'
+        '<div class="af-gauntlet-badge">'
+        '<div class="af-g-label">GAUNTLET AI</div>'
+        '<div><span class="af-g-cohort">G4</span></div>'
+        '</div>',
         unsafe_allow_html=True,
     )
 

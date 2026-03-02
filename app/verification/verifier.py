@@ -95,6 +95,12 @@ FORBIDDEN_PATTERNS = [
     r"as\s+(?:a|your)\s+(?:doctor|physician|nurse|pharmacist)",  # Impersonating medical professional
     r"(?:increase|double|triple)\s+(?:your|the)\s+(?:dose|dosage|medication)",  # Dosage adjustment
     r"(?:you\s+)?(?:don'?t|do\s+not)\s+need\s+(?:to\s+)?(?:see|visit|consult)\s+(?:a\s+)?(?:doctor|physician|specialist)",  # Discouraging consultation
+    # Passive voice and synonym dosage patterns (Phase 1B)
+    r"(?:standard|typical|usual|recommended|normal)\s+(?:dose|dosage)\s+(?:is|of)\s+\d+\s*(?:mg|ml|g\b|mcg|units?)",
+    r"(?:administer|give|inject|infuse)\s+\d+\s*(?:mg|ml|g\b|mcg|units?)",
+    r"\d+\s+(?:milligrams?|milliliters?|micrograms?|grams?)\s+(?:of\s+)?\w+",
+    r"(?:half|quarter|one[- ]third)\s+(?:a\s+)?(?:gram|tablet|pill|capsule)",
+    r"(?:this|the)\s+(?:presentation|symptoms?)\s+(?:is|are)\s+(?:consistent|diagnostic|indicative)\s+(?:of|with)\s+\w+",
 ]
 
 # Refusal exemption patterns — safety refusals should NOT trigger forbidden content violations
@@ -143,6 +149,40 @@ TOOL_GROUNDING_MARKERS = {
 # Minimum grounding marker matches required for long responses (>500 chars)
 _LONG_RESPONSE_THRESHOLD = 500
 _LONG_RESPONSE_MIN_MARKERS = 2
+
+# Negation-aware grounding (Phase 1A)
+_NEGATION_WORDS = {"no", "not", "none", "neither", "nor", "never", "without", "lack", "absent", "deny", "denied", "negative"}
+
+# Contradiction patterns per tool — if response matches these AND tool returned
+# high-severity data, flag a potential grounding contradiction
+_CONTRADICTION_PATTERNS = {
+    "drug_interaction_check": [
+        r"no\s+(?:known\s+)?interaction",
+        r"not\s+contraindicated",
+        r"no\s+(?:significant\s+)?risk",
+        r"safe\s+to\s+(?:combine|take\s+together)",
+    ],
+}
+_CONTRADICTION_RE = {
+    tool: [re.compile(p, re.IGNORECASE) for p in patterns]
+    for tool, patterns in _CONTRADICTION_PATTERNS.items()
+}
+
+# High-severity keywords used by contradiction detection
+_HIGH_SEVERITY_IN_TOOL = {"severe", "high", "contraindicated", "life-threatening", "fatal", "black box", "avoid"}
+
+
+def _is_negated(response_lower: str, marker: str) -> bool:
+    """Check if a grounding marker is negated within its surrounding context.
+
+    Looks for negation words within a 5-word window preceding the marker.
+    """
+    pattern = re.compile(rf'\b(\w+\s+){{0,4}}{re.escape(marker)}', re.IGNORECASE)
+    for match in pattern.finditer(response_lower):
+        preceding = match.group(0).lower().split()
+        if any(w in _NEGATION_WORDS for w in preceding):
+            return True
+    return False
 
 
 # ===================================================================
@@ -264,7 +304,12 @@ def _check_hallucination(response: str, tools_used: list[str], result: Verificat
 # ===================================================================
 
 def _check_source_grounding(response: str, tools_used: list[str], result: VerificationResult) -> None:
-    """Verify response content is actually grounded in tool output, not just summarized."""
+    """Verify response content is actually grounded in tool output, not just summarized.
+
+    Uses negation-aware matching: markers preceded by negation words (e.g., "no interaction")
+    are not counted as valid grounding. Also checks for contradiction patterns where the
+    response dismisses findings that the tool likely returned.
+    """
     response_lower = response.lower()
     result.source_grounding_pass = True  # default
 
@@ -278,8 +323,8 @@ def _check_source_grounding(response: str, tools_used: list[str], result: Verifi
         if not markers:
             continue
 
-        # Count matching markers
-        match_count = sum(1 for m in markers if m in response_lower)
+        # Count matching markers, excluding negated ones (Phase 1A)
+        match_count = sum(1 for m in markers if m in response_lower and not _is_negated(response_lower, m))
 
         # For long responses, require 2+ marker matches; otherwise 1+ is sufficient
         min_required = _LONG_RESPONSE_MIN_MARKERS if is_long_response else 1
@@ -290,6 +335,19 @@ def _check_source_grounding(response: str, tools_used: list[str], result: Verifi
             )
             result.hallucination_risk += 0.2
             result.hallucination_risk = min(result.hallucination_risk, 1.0)
+
+        # Contradiction detection (Phase 1A): check if response contradicts tool output
+        contradiction_patterns = _CONTRADICTION_RE.get(tool_name, [])
+        for cpat in contradiction_patterns:
+            if cpat.search(response_lower):
+                # Check if the response also contains high-severity keywords that
+                # suggest the tool returned meaningful data being dismissed
+                has_severity = any(kw in response_lower for kw in _HIGH_SEVERITY_IN_TOOL)
+                if has_severity:
+                    result.flags.append("GROUNDING_WARNING: Response may contradict tool output")
+                    result.hallucination_risk += 0.25
+                    result.hallucination_risk = min(result.hallucination_risk, 1.0)
+                break  # One contradiction flag per tool is enough
 
     result.verification_checks["source_grounding"] = result.source_grounding_pass
 
@@ -304,15 +362,20 @@ def _score_confidence(response: str, tools_used: list[str], result: Verification
     confidence = 0.3
     breakdown = {"base": 0.3}
 
-    # Tool usage
-    tool_boost = 0.25 if tools_used else 0.0
+    # Tool usage — reduced from 0.25 to 0.15 (using a tool is necessary but not sufficient)
+    tool_boost = 0.15 if tools_used else 0.0
     confidence += tool_boost
     breakdown["tool_boost"] = tool_boost
 
-    # Source citation
-    source_boost = 0.15 if result.has_sources else 0.0
+    # Source citation — increased from 0.15 to 0.20 (sourced answers ARE more reliable)
+    source_boost = 0.20 if result.has_sources else 0.0
     confidence += source_boost
     breakdown["source_boost"] = source_boost
+
+    # Source grounding boost — reward actual grounding, not just tool usage (Phase 1E)
+    grounding_boost = 0.10 if result.source_grounding_pass and tools_used else 0.0
+    confidence += grounding_boost
+    breakdown["grounding_boost"] = grounding_boost
 
     # Disclaimer
     disclaimer_boost = 0.0
@@ -351,11 +414,11 @@ def _score_confidence(response: str, tools_used: list[str], result: Verification
     confidence += domain_penalty
     breakdown["domain_penalty"] = domain_penalty
 
-    # Progressive confidence cap based on hallucination risk
-    # Formula: min(confidence, 0.3 * (1.0 - hallucination_risk))
+    # Progressive confidence cap based on hallucination risk (Phase 1E: lowered threshold from 0.3 to 0.2)
+    # Formula: min(confidence, 0.4 * (1.0 - hallucination_risk))
     if result.hallucination_risk > 0.0:
-        hallucination_cap = 0.3 * (1.0 - result.hallucination_risk)
-        if confidence > hallucination_cap and result.hallucination_risk > 0.3:
+        hallucination_cap = 0.4 * (1.0 - result.hallucination_risk)
+        if confidence > hallucination_cap and result.hallucination_risk > 0.2:
             confidence = min(confidence, hallucination_cap)
             breakdown["hallucination_cap"] = round(hallucination_cap, 4)
 
@@ -397,8 +460,11 @@ def _check_domain_constraints(response: str, query: str, tools_used: list[str], 
                 result.flags.append(f"ESCALATION: High-severity drug interaction detected ({keyword})")
                 break
 
-    # Check for forbidden content, but skip if response is a safety refusal
-    is_refusal = bool(_REFUSAL_EXEMPTION_RE.search(response_lower))
+    # Check for forbidden content, but skip if response is PRIMARILY a refusal.
+    # Only treat as refusal if refusal language appears early (first 200 chars),
+    # not buried at the end as a bypass attempt. (Phase 1C)
+    first_200 = response_lower[:200]
+    is_refusal = bool(_REFUSAL_EXEMPTION_RE.search(first_200))
     _check_forbidden_content(response_lower, result, is_refusal)
 
     # Overdose detection in query
@@ -457,6 +523,20 @@ def _validate_output(response: str, tools_used: list[str], result: VerificationR
     # Check for common error patterns that indicate tool failure
     if _ERROR_PATTERNS_RE.search(response.lower()):
         result.flags.append("OUTPUT_WARNING: Response may contain error information")
+
+    # NEW (Phase 1D): If tools were used, verify Source: line is present
+    if tools_used and "source:" not in response.lower():
+        result.flags.append("OUTPUT_WARNING: Tool data used but no Source: line found in response")
+
+    # NEW (Phase 1D): Check for incomplete sentences (response cut off mid-sentence)
+    stripped = response.strip()
+    if stripped and stripped[-1] not in '.!?")\n*' and len(stripped) > 100:
+        result.flags.append("OUTPUT_WARNING: Response may be truncated (no terminal punctuation)")
+
+    # NEW (Phase 1D): If emergency escalation is needed, verify 911/emergency is mentioned
+    if result.needs_escalation and "911" not in response and "emergency" not in response.lower():
+        result.output_valid = False
+        result.flags.append("OUTPUT_INVALID: Emergency escalation required but response lacks emergency guidance")
 
     result.verification_checks["output_validation"] = result.output_valid
 
@@ -530,18 +610,20 @@ def post_process_response(response: str, verification: VerificationResult) -> st
                 "please call 911 or contact the 988 Suicide & Crisis Lifeline."
             )
 
-    # Add escalation notice if needed
-    if verification.needs_escalation and "emergency" not in processed.lower()[:200]:
+    # Add escalation notice if needed — ALWAYS prepend when escalation is triggered,
+    # regardless of response content. Patient safety takes priority over deduplication.
+    if verification.needs_escalation:
         escalation_notice = (
-            "\n\n**IMPORTANT:** Based on the information provided, this situation may require "
+            "**IMPORTANT:** Based on the information provided, this situation may require "
             "immediate medical attention. Please consult a healthcare professional or call 911 "
-            "if you are experiencing a medical emergency."
+            "if you are experiencing a medical emergency. "
+            "If you are in crisis, contact the 988 Suicide & Crisis Lifeline by calling or texting 988."
         )
         processed = escalation_notice + "\n\n" + processed
 
     # Response-side emergency detection: auto-append 911 notice if response mentions
-    # emergency symptoms but doesn't already contain a 911 reference
-    if _detect_emergency_in_response(processed) and "911" not in processed:
+    # emergency symptoms even when needs_escalation wasn't flagged by the verifier
+    if not verification.needs_escalation and _detect_emergency_in_response(processed) and "911" not in processed:
         processed += EMERGENCY_911_NOTICE
 
     # Add low confidence warning

@@ -18,6 +18,7 @@ from app.agent.prompts import HEALTHCARE_AGENT_SYSTEM_PROMPT
 from app.config import settings
 from app.observability import RequestTracer
 from app.verification.verifier import verify_response, post_process_response
+from app.verification.llm_judge import judge_response, apply_judge_to_verification
 from app.tools.appointment_availability import appointment_availability
 from app.tools.drug_interaction import drug_interaction_check
 from app.tools.insurance_coverage import insurance_coverage_check
@@ -39,11 +40,16 @@ elif settings.langchain_tracing_v2:
 logger.info("Fallback readiness: google_api_key=%s, groq_api_key=%s", bool(settings.google_api_key), bool(settings.groq_api_key))
 
 # Healthcare tools (9 tools: 6 core + 3 drug recall/watchlist)
-TOOLS = [
+# Enable handle_tool_error so the agent can recover from individual tool failures
+# instead of crashing the entire request.
+_ALL_TOOLS = [
     drug_interaction_check, symptom_lookup, provider_search,
     appointment_availability, insurance_coverage_check, medication_lookup,
     manage_watchlist, check_drug_recalls, scan_watchlist_recalls,
 ]
+for _t in _ALL_TOOLS:
+    _t.handle_tool_error = True
+TOOLS = _ALL_TOOLS
 
 
 _FALLBACK_MODELS = {
@@ -85,7 +91,8 @@ def _is_rate_limit_error(e: Exception) -> bool:
 def _should_try_fallback(e: Exception) -> bool:
     """Check if the error warrants trying a fallback provider.
 
-    Catches rate limits, tool-calling incompatibility, and model availability errors.
+    Catches rate limits, tool-calling incompatibility, model availability errors,
+    and malformed tool call errors (failed_generation from Groq).
     """
     error_str = str(e).lower()
     return (
@@ -95,6 +102,8 @@ def _should_try_fallback(e: Exception) -> bool:
         or "function calling" in error_str and "not supported" in error_str
         or "model not found" in error_str
         or "model_not_found" in error_str
+        or "failed_generation" in error_str
+        or "failed to call" in error_str
     )
 
 
@@ -273,6 +282,13 @@ async def chat(message: str, session_id: str = "default") -> dict:
         # Run verification
         unique_tools = list(set(tools_used))
         verification = verify_response(response_text, unique_tools, message)
+
+        # Run LLM-as-judge semantic verification (additive — only raises flags)
+        try:
+            judge_result = await judge_response(response_text, unique_tools, message)
+            apply_judge_to_verification(judge_result, verification)
+        except Exception as judge_err:
+            logger.debug("LLM judge skipped: %s", judge_err)
 
         # Confidence-based fallback: retry with fallback provider if confidence < 0.7
         # Time guard: skip fallback if already past 25s to avoid eval/request timeouts
@@ -518,6 +534,14 @@ async def chat_stream(message: str, session_id: str = "default"):
         # Run verification on complete response
         unique_tools = list(set(tools_used))
         verification = verify_response(full_response, unique_tools, message)
+
+        # Run LLM-as-judge semantic verification (additive — only raises flags)
+        try:
+            judge_result = await judge_response(full_response, unique_tools, message)
+            apply_judge_to_verification(judge_result, verification)
+        except Exception as judge_err:
+            logger.debug("LLM judge skipped in stream: %s", judge_err)
+
         processed_response = post_process_response(full_response, verification)
 
         tracer.set_tokens(input_tokens, output_tokens)
@@ -545,4 +569,26 @@ async def chat_stream(message: str, session_id: str = "default"):
         logger.error("Agent stream error: %s", e, exc_info=True)
         tracer.set_error(str(e), category=type(e).__name__)
         tracer.finish()
-        yield {"type": "error", "content": str(e)}
+        error_str = str(e).lower()
+        # Detect tool call failures (malformed function calls from LLM)
+        if "failed to call" in error_str or "failed_generation" in error_str or "tool_call" in error_str:
+            yield {
+                "type": "clarify",
+                "content": (
+                    "I wasn't sure how to process that request. Could you try rephrasing your question? "
+                    "Here are some things I can help with:\n\n"
+                    "- **Drug interactions:** \"Check interaction between warfarin and aspirin\"\n"
+                    "- **Symptoms:** \"I have a persistent headache with fever\"\n"
+                    "- **Medications:** \"What are the side effects of metformin?\"\n"
+                    "- **Providers:** \"Find me a cardiologist\"\n"
+                    "- **Appointments:** \"Any dermatology openings this week?\"\n"
+                    "- **Insurance:** \"Does Blue Cross PPO cover an MRI?\"\n"
+                    "- **FDA Recalls:** \"Check if lisinopril has been recalled\"\n"
+                    "- **Watchlist:** \"Add metformin to patient P001's watchlist\"\n\n"
+                    "**Disclaimer:** This information is for educational purposes only and does not "
+                    "constitute medical advice. Always consult a qualified healthcare professional "
+                    "for personalized medical guidance."
+                ),
+            }
+        else:
+            yield {"type": "error", "content": str(e)}

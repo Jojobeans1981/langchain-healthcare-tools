@@ -1,10 +1,41 @@
-__pycache__/
-*.pyc
-*.pyo
+# Environment
 .env
-.venv/
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 *.egg-info/
 dist/
 build/
-data/observability/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
 .pytest_cache/
+htmlcov/
+.coverage
+
+# Runtime data
+data/
+
+# Eval results (regenerated)
+evals/eval_results.json
+
+# Misc
+*.log

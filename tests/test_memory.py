@@ -90,3 +90,80 @@ class TestTrimHistory:
 
     def test_trim_nonexistent_session(self):
         trim_history("nonexistent-session-trim")
+
+
+# ===================================================================
+# Phase 4B: Thread Safety Tests
+# ===================================================================
+
+
+class TestThreadSafety:
+    def test_concurrent_session_access(self):
+        """Multiple threads accessing the same session shouldn't corrupt state."""
+        import threading
+
+        errors = []
+
+        def add_messages(session_id, count):
+            try:
+                history = get_session_history(session_id)
+                for i in range(count):
+                    history.add_user_message(f"msg-{i}")
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=add_messages, args=("test-thread-safety", 50)) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert len(errors) == 0
+
+    def test_concurrent_different_sessions(self):
+        """Multiple threads accessing different sessions simultaneously."""
+        import threading
+
+        errors = []
+
+        def create_session(session_id):
+            try:
+                history = get_session_history(session_id)
+                history.add_user_message(f"hello from {session_id}")
+            except Exception as e:
+                errors.append(e)
+
+        threads = [threading.Thread(target=create_session, args=(f"thread-{i}",)) for i in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert len(errors) == 0
+
+    def test_concurrent_clear_and_access(self):
+        """Clearing a session while another thread accesses it shouldn't crash."""
+        import threading
+
+        errors = []
+        get_session_history("test-clear-race")
+
+        def access_session():
+            try:
+                for _ in range(20):
+                    get_session_history("test-clear-race")
+            except Exception as e:
+                errors.append(e)
+
+        def clear_session_repeatedly():
+            try:
+                for _ in range(20):
+                    clear_session("test-clear-race")
+            except Exception as e:
+                errors.append(e)
+
+        t1 = threading.Thread(target=access_session)
+        t2 = threading.Thread(target=clear_session_repeatedly)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+        assert len(errors) == 0

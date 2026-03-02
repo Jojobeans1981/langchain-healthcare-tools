@@ -85,3 +85,59 @@ class TestToolsWithLiveData:
             appointment_availability.ainvoke({"specialty": "medicine"})
         )
         assert "APPOINTMENT" in result or "No available appointments" in result
+
+
+class TestWatchlistSyncLive:
+    """Test the medication watchlist sync against a real OpenEMR instance."""
+
+    def test_get_patient_medications(self, emr_client):
+        """get_patient_medications returns a list (possibly empty) for a valid patient."""
+        result = emr_client.get_patient_medications(1)
+        # On a fresh OpenEMR install, patient 1 may have no medications.
+        # The key assertion: the API responds with data, not None.
+        assert result is not None
+        assert isinstance(result, list)
+
+    def test_watchlist_sync_from_openemr(self, tmp_path):
+        """sync_medications_from_openemr calls real OpenEMR and returns a valid result."""
+        from unittest.mock import patch
+        from app.database import get_db, init_db
+        from app.tools.watchlist_sync import sync_medications_from_openemr
+
+        # Use an isolated database so we don't pollute anything
+        db_path = tmp_path / "live_sync_test.db"
+        init_db(db_path)
+
+        with patch("app.tools.watchlist_sync.get_db", lambda: get_db(db_path)):
+            result = sync_medications_from_openemr("1")
+
+        assert isinstance(result, dict)
+        assert "source" in result
+        # Should be 'openemr' (successful sync) or 'unavailable' (if patient has no meds)
+        assert result["source"] in ("openemr", "unavailable")
+        assert isinstance(result.get("medications", []), list)
+
+    def test_scan_with_openemr_sync(self, tmp_path):
+        """Full pipeline: sync from OpenEMR → scan for FDA recalls."""
+        from unittest.mock import patch
+        from app.database import get_db, init_db
+        from app.tools.drug_recall import scan_watchlist_recalls, manage_watchlist
+
+        db_path = tmp_path / "live_scan_test.db"
+        init_db(db_path)
+
+        with patch("app.tools.drug_recall.get_db", lambda: get_db(db_path)), \
+             patch("app.tools.watchlist_sync.get_db", lambda: get_db(db_path)):
+            # Add a manual medication so scan always has at least one to check
+            manage_watchlist.invoke({
+                "action": "add", "patient_id": "1",
+                "medication_name": "aspirin", "notes": "live test"
+            })
+
+            # Scan — this will auto-sync from OpenEMR, then check FDA
+            result = scan_watchlist_recalls.invoke({"patient_id": "1"})
+
+        assert "aspirin" in result.lower()
+        # If OpenEMR has medications for patient 1, we'll see [OpenEMR] tags
+        # If not, we'll still see the manually-added aspirin
+        assert "FDA" in result.upper() or "recall" in result.lower()

@@ -22,7 +22,8 @@ _test_db_path = Path(tempfile.mkdtemp()) / "test_agentforge.db"
 def _setup_test_db():
     """Create a fresh test database for each test."""
     init_db(_test_db_path)
-    with patch("app.tools.drug_recall.get_db", lambda: get_db(_test_db_path)):
+    with patch("app.tools.drug_recall.get_db", lambda: get_db(_test_db_path)), \
+         patch("app.tools.watchlist_sync.is_openemr_available", return_value=False):
         yield
     # Cleanup
     if _test_db_path.exists():
@@ -301,3 +302,142 @@ class TestScanWatchlistRecalls:
 
         result2 = _watchlist_add("P001", "metformin", "")
         assert "already on the watchlist" in result2
+
+
+# ===================================================================
+# Phase 2E: Error Transparency Tests
+# ===================================================================
+
+
+class TestFDAErrorTransparency:
+    @patch("app.tools.drug_recall.httpx.Client")
+    def test_fda_api_500_shows_error_message(self, mock_client_cls):
+        """HTTP 500 from FDA should show 'could not be verified' not empty."""
+        from app.tools.drug_recall import check_drug_recalls
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 500
+        mock_client = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        with patch("app.tools.drug_recall.time.sleep"):
+            result = check_drug_recalls.invoke({"drug_name": "metformin"})
+        assert "could not be verified" in result.lower() or "error" in result.lower()
+
+    @patch("app.tools.drug_recall.httpx.Client")
+    def test_fda_api_429_shows_rate_limit_message(self, mock_client_cls):
+        """HTTP 429 from FDA should show rate limit message."""
+        from app.tools.drug_recall import check_drug_recalls
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 429
+        mock_client = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        result = check_drug_recalls.invoke({"drug_name": "metformin"})
+        assert "rate limit" in result.lower() or "retry" in result.lower()
+
+    @patch("app.tools.drug_recall.httpx.Client")
+    def test_fda_api_timeout_shows_timeout_message(self, mock_client_cls):
+        """Timeout from FDA should show timeout message."""
+        from app.tools.drug_recall import check_drug_recalls
+
+        mock_client = MagicMock()
+        mock_client.get.side_effect = httpx.TimeoutException("Read timed out")
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        with patch("app.tools.drug_recall.time.sleep"):
+            result = check_drug_recalls.invoke({"drug_name": "metformin"})
+        assert "timed out" in result.lower() or "could not be verified" in result.lower()
+
+    @patch("app.tools.drug_recall.httpx.Client")
+    def test_fda_api_5xx_retries_then_shows_error(self, mock_client_cls):
+        """HTTP 5xx should retry then show error on exhaustion."""
+        from app.tools.drug_recall import _fetch_fda_recalls
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 502
+        mock_client = MagicMock()
+        mock_client.get.return_value = mock_resp
+        mock_client.__enter__ = MagicMock(return_value=mock_client)
+        mock_client.__exit__ = MagicMock(return_value=False)
+        mock_client_cls.return_value = mock_client
+
+        with patch("app.tools.drug_recall.time.sleep"):
+            recalls = _fetch_fda_recalls("metformin", max_retries=2)
+        assert recalls == []
+        # Should have retried (2 calls = 1 initial + 1 retry)
+        assert mock_client.get.call_count == 2
+
+
+# ===================================================================
+# Phase 3B: Real Database Behavioral Tests
+# ===================================================================
+
+
+class TestWatchlistDatabaseBehavior:
+    def test_add_medication_actually_persists_in_database(self):
+        """Verify the database actually contains the record after add."""
+        from app.tools.drug_recall import _watchlist_add
+        _watchlist_add("P001", "metformin", "test notes")
+        conn = get_db(_test_db_path)
+        row = conn.execute(
+            "SELECT medication_name, notes, status, source FROM patient_watchlist WHERE patient_id='P001' AND medication_name='metformin'"
+        ).fetchone()
+        conn.close()
+        assert row is not None
+        assert row[0] == "metformin"
+        assert row[1] == "test notes"
+        assert row[2] == "active"
+        assert row[3] == "manual"
+
+    def test_remove_is_soft_delete(self):
+        """Verify remove sets status='removed', doesn't delete the row."""
+        from app.tools.drug_recall import _watchlist_add, _watchlist_remove
+        _watchlist_add("P001", "aspirin", "")
+        _watchlist_remove("P001", "aspirin")
+        conn = get_db(_test_db_path)
+        row = conn.execute(
+            "SELECT status FROM patient_watchlist WHERE patient_id='P001' AND medication_name='aspirin'"
+        ).fetchone()
+        conn.close()
+        assert row is not None
+        assert row[0] == "removed"
+
+    def test_empty_medication_name_rejected(self):
+        """Adding an empty or whitespace-only medication name should fail gracefully."""
+        from app.tools.drug_recall import _watchlist_add
+        result = _watchlist_add("P001", "   ", "")
+        assert "error" in result.lower() or "empty" in result.lower()
+
+    def test_empty_patient_id_rejected(self):
+        """Adding with an empty patient ID should fail gracefully."""
+        from app.tools.drug_recall import _watchlist_add
+        result = _watchlist_add("   ", "metformin", "")
+        assert "error" in result.lower() or "empty" in result.lower()
+
+    def test_special_characters_in_drug_name(self):
+        """Drug names with special characters should be handled."""
+        from app.tools.drug_recall import _watchlist_add
+        result = _watchlist_add("P001", "aspirin® (brand)", "test")
+        assert "added" in result.lower() or "watchlist" in result.lower()
+
+    def test_remove_empty_medication_rejected(self):
+        """Removing with empty medication name should fail gracefully."""
+        from app.tools.drug_recall import _watchlist_remove
+        result = _watchlist_remove("P001", "  ")
+        assert "error" in result.lower() or "empty" in result.lower()
+
+    def test_update_empty_medication_rejected(self):
+        """Updating with empty medication name should fail gracefully."""
+        from app.tools.drug_recall import _watchlist_update
+        result = _watchlist_update("P001", "  ", "new notes")
+        assert "error" in result.lower() or "empty" in result.lower()

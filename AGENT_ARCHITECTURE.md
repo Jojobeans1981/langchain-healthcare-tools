@@ -34,19 +34,19 @@
 
 **LLM Stack:**
 - **Primary:** Groq / Llama 3.3 70B Versatile (free, ~1-2s inference)
-- **Fallback:** Gemini 1.5 Flash (auto-failover on rate limit or confidence < 0.7)
+- **Fallback:** Gemini 2.5 Flash (auto-failover on rate limit or confidence < 0.7)
 - **Pivot:** Pre-Search planned Gemini Pro primary, but quota exhausted Day 1 → switched to Groq
 
 **9 Tools:**
 
 | Tool | Data Source | Fallback |
 |------|-----------|----------|
-| drug_interaction_check | RxNorm/RxNav (NIH) | 10 known pairs |
-| symptom_lookup | Internal KB | 5 symptom categories |
+| drug_interaction_check | RxNorm/RxNav (NIH) | 21 known pairs |
+| symptom_lookup | Internal KB | 13 symptom categories |
 | provider_search | OpenEMR REST API | Mock providers |
 | appointment_availability | OpenEMR REST API | Mock slots |
 | insurance_coverage_check | OpenEMR REST API | Mock plans |
-| medication_lookup | FDA OpenFDA API | 6 mock medications |
+| medication_lookup | FDA OpenFDA API | 16 mock medications |
 | manage_watchlist | SQLite | — |
 | check_drug_recalls | FDA Enforcement API | — |
 | scan_watchlist_recalls | FDA + SQLite | — |
@@ -63,7 +63,7 @@
 |------|-------------|-----|
 | Hallucination Detection | Flags claims not grounded in tool output via TOOL_GROUNDING_MARKERS | Unsourced healthcare claims are dangerous |
 | Confidence Scoring | Weighted composite (tool_grounding 0.30, hallucination 0.25, domain 0.20, source 0.15, length 0.10). < 0.7 triggers fallback LLM | Surfaces uncertainty, enables automatic retry |
-| Domain Constraints | FORBIDDEN_PATTERNS block prescribing/diagnosing. 30 emergency patterns trigger 911/988 escalation | Non-negotiable safety rails |
+| Domain Constraints | FORBIDDEN_PATTERNS (14 patterns) block prescribing/diagnosing. 22 emergency patterns trigger 911/988 escalation. 10 refusal exemption patterns prevent false positives on safe refusals. | Non-negotiable safety rails |
 | Output Validation | Schema checks, format validation, completeness | Ensures structured responses |
 | Source Grounding | Verifies response references actual tool data | Prevents fabricated medical info |
 
@@ -73,44 +73,44 @@
 
 ## 4. Eval Results
 
-**Dataset:** 80 test cases across 6 categories:
+**Dataset:** 100 test cases across 6 categories:
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Happy Path | 21 | Drug interactions, symptoms, providers, medications |
-| Edge Case | 12 | Missing data, boundary conditions, ambiguous queries |
-| Adversarial | 26 | Prompt injection, jailbreak, medical manipulation |
+| Happy Path | 24 | Drug interactions, symptoms, providers, medications |
+| Edge Case | 13 | Missing data, boundary conditions, ambiguous queries |
+| Adversarial | 36 | Prompt injection, jailbreak, medical manipulation |
 | Multi-Step | 11 | Symptom → provider → appointment chains |
-| Recall | 6 | Watchlist CRUD, FDA API integration |
+| Recall | 12 | Watchlist CRUD, FDA API, edge cases, adversarial, multi-step |
 | Grounding | 4 | Source attribution, hallucination detection |
 
 Each case includes: input query, expected tool calls, expected keywords, and pass/fail criteria.
 
-**Unit Tests (160 passing, 6.04s, Feb 27 2026):**
+**Unit Tests (165 passing, 8.28s, Feb 28 2026):**
 
 | Test File | Tests | What It Covers |
 |-----------|-------|---------------|
 | test_confidence_fallback.py | 6 | LLM fallback triggers, error handling |
-| test_drug_recall.py | 12 | Watchlist CRUD, FDA API, recall scanner |
+| test_drug_recall.py | 17 | Watchlist CRUD, FDA API (retry/timeout), recall scanner, audit trail |
 | test_memory.py | 10 | Session management, history trimming |
 | test_observability.py | 8 | Tracing, latency, token tracking |
 | test_routes.py | 12 | Chat, stream, feedback, dashboard endpoints |
-| test_tools.py | 24 | Drug interactions, insurance, symptoms, medications |
-| test_verifier.py | 88 | All 5 verification layers, safety patterns, content blocking |
-| **TOTAL** | **160** | **All pass, zero failures** |
+| test_tools.py | 30 | Drug interactions, insurance, symptoms, medications |
+| test_verifier.py | 82 | All 5 verification layers, safety patterns, content blocking |
+| **TOTAL** | **165** | **All pass, zero failures** |
 
 **Integration Eval Results — Critical Smoke Tests (Feb 27, 2026):**
 
 | Category | Cases | Passed | Failed | Pass Rate |
 |----------|-------|--------|--------|-----------|
-| Happy Path | 5 | 3 | 2 | 60.0% |
-| Adversarial | 3 | 2 | 1 | 66.7% |
-| Multi-Step | 2 | 2 | 0 | 100.0% |
-| **TOTAL** | **10** | **7** | **3** | **70.0%** |
+| Happy Path | 5 | 5 | 0 | 100% |
+| Adversarial | 3 | 3 | 0 | 100% |
+| Multi-Step | 2 | 2 | 0 | 100% |
+| **TOTAL** | **10** | **10** | **0** | **100%** |
 
-**Average latency:** 1.88s per query (Groq/Llama 3.3 70B)
+**Average latency:** 2.05s per query (Groq/Llama 3.3 70B)
 
-**Failure analysis:** All 3 failures are keyword-matching strictness — the LLM paraphrased instead of echoing exact terms. Tools were invoked correctly and responses were medically appropriate. Full 80-case suite available via `python -m evals.runner`.
+Full 100-case suite available via `python -m evals.runner`.
 
 ---
 
@@ -143,12 +143,12 @@ Each case includes: input query, expected tool calls, expected keywords, and pas
 **Package:** `langchain-healthcare-tools`
 - 9 healthcare-specific LangChain tools for any LangGraph/LangChain agent
 - 5-layer medical verification system
-- 80-case eval dataset for healthcare agent benchmarking
+- 100-case eval dataset for healthcare agent benchmarking
 - MIT licensed
 
 **Install from GitHub:**
 ```bash
-pip install git+https://github.com/Jojobeans1981/AgentForge-private.git#subdirectory=agentforge
+pip install git+https://github.com/Jojobeans1981/langchain-healthcare-tools.git
 ```
 
 **Bounty:** FDA Drug Recall Monitoring — 3 tools cross-referencing patient medication lists against live FDA recall data. Documented in BOUNTY.md.

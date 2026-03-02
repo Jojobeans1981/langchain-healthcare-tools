@@ -221,6 +221,7 @@ class TestVerifyResponse:
     def test_full_pipeline_good_response(self):
         response = (
             "Based on FDA Drug Safety Database data, warfarin and aspirin have a High severity interaction. "
+            "Consult your doctor or seek emergency care if you experience unusual bleeding. "
             "Source: FDA, NIH DailyMed. "
             "Disclaimer: This is not medical advice. Consult a healthcare professional."
         )
@@ -558,7 +559,7 @@ class TestProgressiveConfidenceCap:
         assert result.confidence > 0.5
 
     def test_moderate_risk_caps_confidence(self):
-        """Hallucination risk of 0.5 should cap at 0.3*(1-0.5) = 0.15."""
+        """Hallucination risk of 0.5 should cap at 0.4*(1-0.5) = 0.20."""
         result = VerificationResult()
         result.has_sources = True
         result.hallucination_risk = 0.5
@@ -567,10 +568,10 @@ class TestProgressiveConfidenceCap:
             ["drug_interaction_check"],
             result,
         )
-        assert result.confidence <= 0.15 + 0.01  # small tolerance
+        assert result.confidence <= 0.20 + 0.01  # small tolerance
 
     def test_high_risk_severely_caps(self):
-        """Hallucination risk of 0.8 should cap at 0.3*(1-0.8) = 0.06."""
+        """Hallucination risk of 0.8 should cap at 0.4*(1-0.8) = 0.08."""
         result = VerificationResult()
         result.has_sources = True
         result.hallucination_risk = 0.8
@@ -579,7 +580,7 @@ class TestProgressiveConfidenceCap:
             ["drug_interaction_check"],
             result,
         )
-        assert result.confidence <= 0.06 + 0.01
+        assert result.confidence <= 0.08 + 0.01
 
     def test_max_risk_caps_near_zero(self):
         """Hallucination risk of 1.0 should cap at 0."""
@@ -719,3 +720,190 @@ class TestNewUnsupportedClaimPatterns:
         result = VerificationResult()
         _check_hallucination("This drug is FDA approved for treating migraines.", [], result)
         assert result.hallucination_risk > 0
+
+
+# ===================================================================
+# Phase 1 Hardening Tests — Negation, Bypass, Output Validation
+# ===================================================================
+
+
+class TestNegationAwareGrounding:
+    def test_negated_grounding_markers_detected(self):
+        """Response says 'no interaction' when drug_interaction_check was used."""
+        result = verify_response(
+            "I checked the database and found no interaction between these drugs. There is no risk.",
+            ["drug_interaction_check"],
+            "Check warfarin and aspirin interaction",
+        )
+        # Should flag grounding issue because markers are negated
+        assert not result.source_grounding_pass or result.hallucination_risk > 0.2
+
+    def test_non_negated_markers_still_pass(self):
+        """Markers that are NOT negated should still count as valid grounding."""
+        result = verify_response(
+            "The interaction severity is moderate with some risk of bleeding. Source: RxNorm.",
+            ["drug_interaction_check"],
+            "Check warfarin and aspirin interaction",
+        )
+        assert result.source_grounding_pass is True
+
+    def test_contradiction_flagged_when_severity_present(self):
+        """Response says 'no interaction' but also mentions 'severe' — contradicts itself."""
+        result = VerificationResult()
+        _check_source_grounding(
+            "There is no known interaction, but the severity was noted as high. Source: FDA.",
+            ["drug_interaction_check"],
+            result,
+        )
+        assert any("GROUNDING_WARNING" in f for f in result.flags)
+
+
+class TestPassiveVoiceDosagePatterns:
+    def test_passive_dosage_caught(self):
+        """Passive voice dosage bypass should be caught."""
+        result = verify_response(
+            "The standard dose is 500mg of ibuprofen for adults. Source: FDA.",
+            ["medication_lookup"],
+            "Tell me about ibuprofen",
+        )
+        assert len(result.domain_violations) > 0
+
+    def test_administer_dosage_caught(self):
+        """Synonym 'administer' with dosage should be caught."""
+        result = VerificationResult()
+        _check_domain_constraints(
+            "Administer 100mg of the medication intravenously.",
+            "how to give this drug",
+            [],
+            result,
+        )
+        assert len(result.domain_violations) > 0
+
+    def test_milligrams_spelled_out_caught(self):
+        """Dosage with spelled-out units should be caught."""
+        result = VerificationResult()
+        _check_domain_constraints(
+            "The patient received 500 milligrams of acetaminophen.",
+            "acetaminophen dose",
+            [],
+            result,
+        )
+        assert len(result.domain_violations) > 0
+
+
+class TestRefusalExemptionBypass:
+    def test_refusal_at_end_does_not_exempt(self):
+        """Adding 'consult a doctor' at the end should not exempt forbidden content."""
+        # The refusal phrase must be AFTER the first 200 characters to test the bypass
+        result = verify_response(
+            "You definitely have diabetes based on these symptoms. Your blood sugar readings indicate "
+            "a clear pattern of insulin resistance that has progressed significantly over time. "
+            "Take 500 mg of metformin twice daily with meals. Please consult a doctor.",
+            ["symptom_lookup"],
+            "I have high blood sugar",
+        )
+        assert len(result.domain_violations) > 0
+
+    def test_refusal_at_start_still_exempts(self):
+        """Genuine refusal at start should still be exempt."""
+        result = VerificationResult()
+        _check_domain_constraints(
+            "I cannot prescribe medication. Please consult your doctor for proper dosage. "
+            "Dosage must be determined by your healthcare provider.",
+            "what dose should I take",
+            [],
+            result,
+        )
+        assert len(result.domain_violations) == 0
+
+
+class TestOutputValidationPhase1:
+    def test_missing_source_line_flagged(self):
+        """Tool data used but no Source: line in response."""
+        result = VerificationResult()
+        _validate_output(
+            "The drug has a moderate interaction. Be careful when combining these.",
+            ["drug_interaction_check"],
+            result,
+        )
+        assert any("no Source: line" in f for f in result.flags)
+
+    def test_source_line_present_no_flag(self):
+        """Response with Source: line should not be flagged."""
+        result = VerificationResult()
+        _validate_output(
+            "The drug has a moderate interaction. Source: RxNorm API.",
+            ["drug_interaction_check"],
+            result,
+        )
+        assert not any("no Source: line" in f for f in result.flags)
+
+    def test_emergency_response_requires_911(self):
+        """Emergency escalation requires 911 or emergency mention."""
+        result = VerificationResult()
+        result.needs_escalation = True
+        _validate_output(
+            "Chest pain can have many causes including anxiety and heartburn.",
+            ["symptom_lookup"],
+            result,
+        )
+        assert not result.output_valid
+        assert any("emergency" in f.lower() for f in result.flags)
+
+    def test_emergency_response_with_911_passes(self):
+        """Emergency response mentioning 911 should pass."""
+        result = VerificationResult()
+        result.needs_escalation = True
+        _validate_output(
+            "This is an emergency. Please call 911 immediately.",
+            ["symptom_lookup"],
+            result,
+        )
+        assert result.output_valid
+
+    def test_truncated_response_flagged(self):
+        """Response ending mid-sentence (no terminal punctuation) should be flagged."""
+        result = VerificationResult()
+        _validate_output(
+            "This medication has several important interactions that include warfarin and other blood thinners that can cause significant",
+            [],
+            result,
+        )
+        assert any("truncated" in f.lower() for f in result.flags)
+
+
+class TestRecalibratedConfidence:
+    def test_grounding_boost_present(self):
+        """New grounding_boost should appear in confidence breakdown."""
+        result = VerificationResult()
+        result.has_sources = True
+        result.source_grounding_pass = True
+        _score_confidence("Source: FDA data. Disclaimer: not medical advice.", ["drug_interaction_check"], result)
+        assert "grounding_boost" in result.confidence_breakdown
+        assert result.confidence_breakdown["grounding_boost"] == 0.10
+
+    def test_tool_boost_reduced(self):
+        """Tool boost should be 0.15 (reduced from 0.25)."""
+        result = VerificationResult()
+        _score_confidence("Some response.", ["drug_interaction_check"], result)
+        assert result.confidence_breakdown["tool_boost"] == 0.15
+
+    def test_source_boost_increased(self):
+        """Source boost should be 0.20 (increased from 0.15)."""
+        result = VerificationResult()
+        result.has_sources = True
+        _score_confidence("Source: FDA.", [], result)
+        assert result.confidence_breakdown["source_boost"] == 0.20
+
+    def test_lower_hallucination_triggers_cap(self):
+        """Hallucination risk of 0.25 should now trigger cap (threshold lowered from 0.3 to 0.2)."""
+        result = VerificationResult()
+        result.has_sources = True
+        result.hallucination_risk = 0.25
+        _score_confidence(
+            "Source: FDA data. This is not medical advice.",
+            ["drug_interaction_check"],
+            result,
+        )
+        # Cap = 0.4 * (1 - 0.25) = 0.30. With risk 0.25 > 0.2, cap IS applied.
+        assert result.confidence <= 0.30 + 0.01

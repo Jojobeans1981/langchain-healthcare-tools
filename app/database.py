@@ -40,6 +40,12 @@ def init_db(db_path: Path = None):
         conn.commit()
     except sqlite3.OperationalError:
         pass  # Column already exists
+    # Add source column if missing — tracks 'manual' vs 'openemr' origin
+    try:
+        conn.execute("ALTER TABLE patient_watchlist ADD COLUMN source TEXT DEFAULT 'manual'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     conn.commit()
     conn.close()
 

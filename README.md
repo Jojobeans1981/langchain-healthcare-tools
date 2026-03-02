@@ -30,30 +30,6 @@ cd langchain-healthcare-tools
 pip install -e ".[server,dev]"
 ```
 
-## Use as a Library
-
-Drop the tools, prompt, and verifier into any LangGraph agent:
-
-```python
-from app.tools import ALL_TOOLS
-from app.agent.prompts import HEALTHCARE_AGENT_SYSTEM_PROMPT
-from app.verification.verifier import verify_response, post_process_response
-
-from langchain_groq import ChatGroq
-from langgraph.prebuilt import create_react_agent
-
-# Build a verified healthcare agent in 5 lines
-llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.1)
-agent = create_react_agent(llm, ALL_TOOLS, prompt=HEALTHCARE_AGENT_SYSTEM_PROMPT)
-result = agent.invoke({"messages": [("user", "Check warfarin and aspirin interaction")]})
-
-# Verify the response before showing to users
-verification = verify_response(response_text, tools_used, original_query)
-safe_response = post_process_response(response_text, verification)
-```
-
-The system prompt includes a **Clinical Decision Engine** — when users describe complex patient scenarios (multiple medications + symptoms + specialist needs), the agent autonomously orchestrates all relevant tools and produces a structured Clinical Decision Report.
-
 ---
 
 ## Key Metrics
@@ -68,6 +44,7 @@ The system prompt includes a **Clinical Decision Engine** — when users describ
 | Cost Per Query | ~$0.00 (Groq free tier) |
 | Single-Tool Latency | ~1-3 seconds |
 | Multi-Step Latency | ~3-5 seconds |
+| Clinical Decision Report | 5-7 tools orchestrated from a single patient description |
 | Streaming | Yes (SSE via FastAPI + Streamlit) |
 
 ---
@@ -132,6 +109,40 @@ AA = Appointment Avail.  IC = Insurance Coverage  ML = Medication Lookup
 | `scan_watchlist_recalls` | SQLite + FDA openFDA API | Cross-reference a patient's entire medication list against FDA recall database in one query |
 
 All tools have **curated mock data fallbacks** — the system works fully offline without any external API dependencies.
+
+---
+
+## Clinical Decision Engine
+
+Most healthcare chatbots answer one question at a time. AgentForge's Clinical Decision Engine detects complex patient scenarios and **autonomously orchestrates 5-7 tools from a single message** — producing a structured clinical report that would normally require a pharmacist to manually cross-reference multiple databases.
+
+**Try it:** Type (or click the featured card in the UI):
+
+> *"68-year-old on metformin and lisinopril, persistent fatigue, needs an endocrinologist"*
+
+The agent automatically:
+1. Checks drug interactions between metformin and lisinopril (`drug_interaction_check`)
+2. Pulls FDA data on both medications (`medication_lookup` × 2)
+3. Triages the fatigue symptom (`symptom_lookup`)
+4. Finds endocrinologists (`provider_search`)
+5. Checks appointment availability (`appointment_availability`)
+
+...and returns a structured **Clinical Decision Report** with 7 sections:
+
+| Section | Source Tool(s) |
+|---------|---------------|
+| **Patient Summary** | User input restatement |
+| **1. Medication Review** | `medication_lookup` |
+| **2. Drug Interaction Analysis** | `drug_interaction_check` |
+| **3. Symptom Assessment** | `symptom_lookup` |
+| **4. Provider Recommendations** | `provider_search` + `appointment_availability` |
+| **5. Insurance Coverage** | `insurance_coverage_check` (if mentioned) |
+| **6. FDA Recall Check** | `scan_watchlist_recalls` (if patient ID provided) |
+| **7. Action Items** | Prioritized next steps |
+
+**How it works:** Pure prompt engineering — no new tools, no new infrastructure. The LangGraph ReAct agent already supports unlimited tool calls per turn. The system prompt teaches the LLM *when* to detect a complex scenario (2+ of: multiple medications, symptoms, specialist needs, insurance questions, patient ID) and *how* to orchestrate all relevant tools into a structured report.
+
+**Why it matters:** This is what enterprise clinical decision support systems charge $50K/year for — automated multi-source cross-referencing with structured output. AgentForge does it in a single conversational turn with full verification.
 
 ---
 

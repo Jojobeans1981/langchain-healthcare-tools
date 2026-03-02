@@ -35,6 +35,16 @@ These clinics typically have 1-3 pharmacists managing 200+ patients on active me
 
 AgentForge integrates 4 real-world data sources into a single conversational AI interface:
 
+### Zero Setup Required — No OpenEMR Seeding Needed
+
+Unlike other OpenEMR integrations, **AgentForge works out of the box with no database seeding, no OpenEMR Docker container, and no manual data setup.** Every tool uses a 3-tier data strategy:
+
+1. **Live OpenEMR** — If a running OpenEMR instance is detected (OAuth2 auto-registration), tools pull real patient data
+2. **Live Public APIs** — FDA OpenFDA and NIH RxNorm are always queried for drug info, interactions, and recalls — no API keys needed
+3. **Built-in Clinical Data** — If both are unavailable, every tool falls back to curated mock data embedded in the code itself
+
+The app gracefully degrades at each tier. An evaluator can `docker compose up` and start chatting immediately — or connect to a live OpenEMR instance for real patient data. Either way, all 9 tools work out of the box.
+
 ### RxNorm / RxNav API (National Institutes of Health)
 
 | Attribute | Detail |
@@ -43,7 +53,7 @@ AgentForge integrates 4 real-world data sources into a single conversational AI 
 | URL | https://rxnav.nlm.nih.gov/REST/interaction/ |
 | Cost | Free, no API key |
 | Purpose | Drug interaction checking — validates drug names and retrieves known interaction pairs with severity ratings |
-| Fallback | 10 curated known interaction pairs (warfarin+aspirin, metformin+alcohol, etc.) for when the API is unreachable |
+| Fallback | 21 curated known interaction pairs (warfarin+aspirin, metformin+alcohol, omeprazole+clopidogrel, etc.) for when the API is unreachable |
 
 ### FDA openFDA Drug Enforcement API
 
@@ -64,7 +74,7 @@ AgentForge integrates 4 real-world data sources into a single conversational AI 
 | URL | https://api.fda.gov/drug/label.json |
 | Cost | Free, no API key |
 | Purpose | Medication information lookup — generic/brand names, drug class, manufacturer, indications, warnings, adverse reactions |
-| Fallback | 6 curated mock medications (metformin, lisinopril, warfarin, aspirin, omeprazole, atorvastatin) |
+| Fallback | 16 curated mock medications (metformin, lisinopril, warfarin, aspirin, omeprazole, atorvastatin, losartan, levothyroxine, sertraline, gabapentin, and more) |
 
 ### OpenEMR REST API
 
@@ -130,6 +140,15 @@ Built-in observability with 8 capabilities:
 - Persistent trace storage (JSONL files)
 - Eval history recording
 - LangSmith integration (optional, for production tracing)
+
+### Production Hardening
+
+- **Multi-stage Docker build** — Separates dependency installation from runtime for smaller, more secure images
+- **Startup health checks** — `start.sh` waits for the FastAPI backend to pass `/health` before launching Streamlit, with 30s timeout and process death detection
+- **Global error handler** — Unhandled exceptions return structured JSON (`{"error": "internal_server_error"}`) instead of leaking stack traces
+- **Config validation** — Pydantic validators reject invalid `llm_provider`, out-of-range `model_temperature`, and unrecognized `log_level` values at startup
+- **FDA API resilience** — Exponential backoff (3 retries: 0.5s → 1s → 2s) on transient failures, 100ms throttle between batch API calls
+- **`.dockerignore`** — Excludes tests, `.git`, `__pycache__`, and secrets from Docker context
 
 ### Multi-Provider LLM Fallback
 
@@ -231,10 +250,10 @@ This isn't a demo feature. It's a real clinical safety tool that addresses a gen
 | Data Sources | 4 (RxNorm/NIH, FDA Enforcement, FDA Labels, OpenEMR REST) |
 | Tools Built | 9 (6 core + 3 bounty) |
 | Verification | 5-layer system with active content blocking |
-| Tests | 165 unit tests + 96 eval cases (91% pass rate) |
+| Tests | 165 unit tests + 7 live integration tests + 100 eval cases (91% pass rate) |
 | Bounty Feature | FDA Drug Recall Monitoring — watchlist + recall checker + cross-reference scanner |
 | Impact | Automated recall detection for 100K+ OpenEMR practices that currently have no solution |
 | Cost | $0 API costs, $7/month hosting |
 | Open Source Package | [langchain-healthcare-tools](https://github.com/Jojobeans1981/langchain-healthcare-tools) ([v0.1.0](https://github.com/Jojobeans1981/langchain-healthcare-tools/releases/tag/v0.1.0)) |
-| Eval Dataset | 96 cases, 6 categories, 9 tools ([healthcare_eval_dataset.json](evals/healthcare_eval_dataset.json)) |
+| Eval Dataset | 100 cases, 6 categories, 9 tools ([healthcare_eval_dataset.json](evals/healthcare_eval_dataset.json)) |
 | Live Demo | https://agentforge-0p0k.onrender.com/ |

@@ -1,4 +1,6 @@
 import logging
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -7,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.routes import router
+from app.api.watchlist_routes import watchlist_router
 from app.config import settings
 
 # Load environment variables
@@ -40,36 +43,60 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS for Streamlit frontend
+# CORS configuration (Phase 6B) — restrict origins based on environment
+_default_origins = [
+    "http://localhost:8501",   # Streamlit default
+    "http://127.0.0.1:8501",
+    "http://localhost:8000",   # FastAPI (Swagger UI)
+    "http://127.0.0.1:8000",
+]
+if settings.app_env == "production":
+    _allowed_origins = [getattr(settings, "allowed_origin", "https://agentforge-0p0k.onrender.com")]
+else:
+    _allowed_origins = _default_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8501",   # Streamlit default
-        "http://127.0.0.1:8501",
-        "http://localhost:8000",   # FastAPI (Swagger UI)
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
-# Global exception handler — return structured JSON, never leak stack traces
+# Rate limiting (Phase 6A) — simple in-memory per-IP rate limiter
+_request_counts: dict[str, list[float]] = defaultdict(list)
+_RATE_LIMIT = 60   # requests per minute
+_RATE_WINDOW = 60   # seconds
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    _request_counts[client_ip] = [t for t in _request_counts[client_ip] if now - t < _RATE_WINDOW]
+    if len(_request_counts[client_ip]) >= _RATE_LIMIT:
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded. Please retry in 1 minute."},
+        )
+    _request_counts[client_ip].append(now)
+    return await call_next(request)
+
+
+# Global exception handler — return structured JSON, never leak stack traces (Phase 6D)
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger = logging.getLogger(__name__)
     logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={
-            "error": "internal_server_error",
-            "message": "An unexpected error occurred. Please try again.",
-        },
+        content={"detail": "An internal error occurred. Please try again."},
+        # Never include exc details in response body
     )
 
 
 # Include API routes
 app.include_router(router, prefix="/api")
+app.include_router(watchlist_router, prefix="/api")
 
 
 @app.get("/health")
