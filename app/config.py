@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     google_api_key: str = ""
     model_name: str = "llama-3.3-70b-versatile"
     model_temperature: float = 0.1
-    model_max_tokens: int = 2048
+    model_max_tokens: int = 4096
 
     # OpenEMR REST API connection
     openemr_base_url: str = "https://localhost:9300"
