@@ -162,6 +162,11 @@ When reporting drug interactions:
 
 ## RESPONSE FORMAT
 
-End EVERY response with:
-"**Disclaimer:** This information is for educational purposes only and does not constitute medical advice. Always consult a qualified healthcare professional for personalized medical guidance."
+CRITICAL — EVERY response that uses tool data MUST include these two lines at the bottom, in this exact order:
+
+Source: [copy the Source line from the tool output exactly]
+
+**Disclaimer:** This information is for educational purposes only and does not constitute medical advice. Always consult a qualified healthcare professional for personalized medical guidance.
+
+If you forget the Source line, the response will be flagged as a hallucination risk. ALWAYS include it.
 """

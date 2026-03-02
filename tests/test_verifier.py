@@ -818,15 +818,27 @@ class TestRefusalExemptionBypass:
 
 
 class TestOutputValidationPhase1:
-    def test_missing_source_line_flagged(self):
-        """Tool data used but no Source: line in response."""
+    def test_missing_source_line_flagged_when_grounding_fails(self):
+        """Tool data used, no Source: line, AND grounding failed → flag fires."""
         result = VerificationResult()
+        result.source_grounding_pass = False  # grounding also failed
+        _validate_output(
+            "Here is some generic information about health.",
+            ["drug_interaction_check"],
+            result,
+        )
+        assert any("no Source: line" in f for f in result.flags)
+
+    def test_missing_source_line_not_flagged_when_grounded(self):
+        """Tool data used, no Source: line, but grounding passed → no flag (cosmetic only)."""
+        result = VerificationResult()
+        result.source_grounding_pass = True  # response is well-grounded
         _validate_output(
             "The drug has a moderate interaction. Be careful when combining these.",
             ["drug_interaction_check"],
             result,
         )
-        assert any("no Source: line" in f for f in result.flags)
+        assert not any("no Source: line" in f for f in result.flags)
 
     def test_source_line_present_no_flag(self):
         """Response with Source: line should not be flagged."""

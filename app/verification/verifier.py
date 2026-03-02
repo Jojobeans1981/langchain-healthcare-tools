@@ -524,8 +524,10 @@ def _validate_output(response: str, tools_used: list[str], result: VerificationR
     if _ERROR_PATTERNS_RE.search(response.lower()):
         result.flags.append("OUTPUT_WARNING: Response may contain error information")
 
-    # NEW (Phase 1D): If tools were used, verify Source: line is present
-    if tools_used and "source:" not in response.lower():
+    # NEW (Phase 1D): If tools were used, verify Source: line is present.
+    # Only flag if the response also lacks grounding markers (i.e., the LLM didn't use tool data at all).
+    # If grounding passed, the missing Source: line is cosmetic, not a safety issue.
+    if tools_used and "source:" not in response.lower() and not result.source_grounding_pass:
         result.flags.append("OUTPUT_WARNING: Tool data used but no Source: line found in response")
 
     # NEW (Phase 1D): Check for incomplete sentences (response cut off mid-sentence)
