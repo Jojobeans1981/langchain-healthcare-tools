@@ -10,7 +10,8 @@ API_BASE_URL = os.environ.get("AGENTFORGE_API_URL", "http://localhost:8000/api")
 st.set_page_config(
     page_title="AgentForge Healthcare AI",
     page_icon="🏥",
-    layout="centered",
+    layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 # ── Custom CSS ──────────────────────────────────────────────────────────
@@ -177,8 +178,13 @@ st.markdown("""
         z-index: 2;
     }
 
-    /* ── Tighter spacing ── */
-    .stMainBlockContainer { padding-top: 1rem; }
+    /* ── Tighter spacing + constrain width for wide layout ── */
+    .stMainBlockContainer {
+        padding-top: 1rem;
+        max-width: 52rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
 
     /* ══════════════════════════════════════════════════════════════════
        §3  ANIMATED GRADIENT HEADER
