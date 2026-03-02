@@ -1398,8 +1398,6 @@ st.markdown("""
     /* Bottom "Made with Streamlit" footer */
     footer { display: none !important; }
     footer::after { display: none !important; }
-    /* Hamburger / main menu */
-    #MainMenu { display: none !important; }
     /* Deploy button (top-right cloud icon) */
     .stDeployButton { display: none !important; }
     [data-testid="stToolbar"] { display: none !important; }
