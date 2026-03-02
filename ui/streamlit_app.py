@@ -1753,17 +1753,14 @@ def main():
             st.session_state.pending_example = cdr_question
             st.rerun()
 
-        cols = st.columns(2)
         for i, (icon, label, question) in enumerate(EXAMPLE_QUESTIONS):
-            col = cols[i % 2]
-            with col:
-                if st.button(
-                    f"{icon} **{label}**\n{question}",
-                    key=f"welcome_{i}",
-                    use_container_width=True,
-                ):
-                    st.session_state.pending_example = question
-                    st.rerun()
+            if st.button(
+                f"{icon} {label} — {question}",
+                key=f"welcome_{i}",
+                use_container_width=True,
+            ):
+                st.session_state.pending_example = question
+                st.rerun()
     else:
         # Display chat history
         for i, msg in enumerate(st.session_state.messages):
