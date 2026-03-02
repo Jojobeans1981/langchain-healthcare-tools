@@ -1391,20 +1391,13 @@ st.markdown("""
     }
 
     /* ══════════════════════════════════════════════════════════════════
-       §99  HIDE STREAMLIT CHROME — toolbar, header, footer, deploy btn
+       §99  HIDE STREAMLIT CHROME — footer and deploy btn only
+            NOTE: stToolbar and stHeader intentionally kept visible
+            so the sidebar hamburger toggle remains accessible
        ══════════════════════════════════════════════════════════════════ */
-    /* Top header bar */
-    header[data-testid="stHeader"] { display: none !important; }
-    /* Bottom "Made with Streamlit" footer */
     footer { display: none !important; }
     footer::after { display: none !important; }
-    /* Deploy button (top-right cloud icon) */
     .stDeployButton { display: none !important; }
-    [data-testid="stToolbar"] { display: none !important; }
-    /* GitHub icon / viewer badge */
-    [data-testid="stDecoration"] { display: none !important; }
-    /* Status widget (bottom-left running indicator) */
-    [data-testid="stStatusWidget"] { display: none !important; }
     /* Remove blank top padding Streamlit adds for the hidden header */
     .block-container {
         padding-top: 1rem !important;
