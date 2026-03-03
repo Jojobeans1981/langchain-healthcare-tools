@@ -10,8 +10,7 @@ API_BASE_URL = os.environ.get("AGENTFORGE_API_URL", "http://localhost:8000/api")
 st.set_page_config(
     page_title="AgentForge Healthcare AI",
     page_icon="🏥",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    layout="centered",
 )
 
 # ── Custom CSS ──────────────────────────────────────────────────────────
@@ -38,7 +37,7 @@ st.markdown("""
         width: 75vw;
         height: 60vh;
         pointer-events: none;
-        z-index: 0;
+        z-index: 1;
         opacity: 0.08;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 220'%3E%3Cdefs%3E%3ClinearGradient id='wm' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ctext x='300' y='110' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='900' font-size='82' fill='url(%23wm)' letter-spacing='-2'%3EAGENTFORGE%3C/text%3E%3Ctext x='300' y='175' text-anchor='middle' font-family='Inter,system-ui,sans-serif' font-weight='600' font-size='32' fill='%230ea5e9' letter-spacing='10'%3EHEALTHCARE AI%3C/text%3E%3C/svg%3E");
         background-repeat: no-repeat;
@@ -130,61 +129,22 @@ st.markdown("""
         animation: auroraShift2 25s ease-in-out infinite;
     }
 
-    /* ── Dot grid background ── */
-    .stApp::after {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        z-index: 0;
-        opacity: 0.18;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Ccircle cx='1' cy='1' r='0.9' fill='%230ea5e9' fill-opacity='0.45'/%3E%3C/svg%3E");
-        background-repeat: repeat;
-        background-size: 28px 28px;
-        mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 100%);
-        -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 100%);
-    }
-
     /* ── Custom scrollbar ── */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track {
-        background: rgba(15,23,42,0.3);
-        border-radius: 4px;
-    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, rgba(14,165,233,0.35) 0%, rgba(59,130,246,0.25) 100%);
-        border-radius: 4px;
-        transition: background 0.2s ease;
+        background: rgba(14,165,233,0.2);
+        border-radius: 3px;
     }
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, rgba(14,165,233,0.6) 0%, rgba(59,130,246,0.45) 100%);
-        box-shadow: 0 0 6px rgba(14,165,233,0.3);
+        background: rgba(14,165,233,0.35);
     }
-    ::-webkit-scrollbar-corner { background: transparent; }
-
-    /* Firefox scrollbar */
-    * { scrollbar-width: thin; scrollbar-color: rgba(14,165,233,0.3) rgba(15,23,42,0.3); }
 
     /* ── Smooth scrolling ── */
     html, .main { scroll-behavior: smooth; }
 
-    /* ── Ensure content layers sit above decorative backgrounds ── */
-    .main .block-container,
-    [data-testid="stSidebar"],
-    [data-testid="stSidebarContent"],
-    .stMainBlockContainer,
-    .stChatFloatingInputContainer {
-        position: relative;
-        z-index: 2;
-    }
-
-    /* ── Tighter spacing + constrain width for wide layout ── */
-    .stMainBlockContainer {
-        padding-top: 1rem;
-        max-width: 52rem;
-        margin-left: auto;
-        margin-right: auto;
-    }
+    /* ── Tighter spacing ── */
+    .stMainBlockContainer { padding-top: 1rem; }
 
     /* ══════════════════════════════════════════════════════════════════
        §3  ANIMATED GRADIENT HEADER
@@ -571,27 +531,14 @@ st.markdown("""
         color: #7dd3fc;
         border: 1px solid rgba(14,165,233,0.18);
         border-radius: 999px;
-        padding: 0.16rem 0.65rem;
+        padding: 0.14rem 0.6rem;
         font-size: 0.65rem;
         font-weight: 600;
-        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
+        transition: all 0.2s ease;
     }
     .af-meta .af-pill:hover {
-        background: rgba(14,165,233,0.2);
-        border-color: rgba(14,165,233,0.4);
-        transform: scale(1.07) translateY(-1px);
-        box-shadow: 0 2px 8px rgba(14,165,233,0.15);
-    }
-    /* Vertical separator between meta groups */
-    .af-meta-sep {
-        width: 1px;
-        height: 14px;
-        background: rgba(148,163,184,0.12);
-        border-radius: 1px;
-        flex-shrink: 0;
+        background: rgba(14,165,233,0.18);
+        border-color: rgba(14,165,233,0.35);
     }
     .af-meta .af-latency {
         font-family: 'SF Mono', 'Fira Code', monospace;
@@ -954,47 +901,23 @@ st.markdown("""
     }
 
     /* Chat input */
-    @keyframes inputGlowPulse {
-        0%, 100% { box-shadow: 0 0 0 3px rgba(14,165,233,0.08), 0 4px 20px rgba(14,165,233,0.08); }
-        50%       { box-shadow: 0 0 0 4px rgba(14,165,233,0.16), 0 6px 28px rgba(14,165,233,0.14); }
-    }
     .stChatInput {
-        transition: all 0.3s ease;
-    }
-    .stChatInput > div {
-        border-radius: 16px !important;
         transition: all 0.3s ease;
     }
     .stChatInput textarea {
         border-radius: 14px;
         font-size: 0.88rem;
-        padding: 0.85rem 1.1rem;
-        background: rgba(15,23,42,0.65) !important;
-        backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(14,165,233,0.15) !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.15) !important;
+        padding: 0.8rem 1rem;
+        background: rgba(15,23,42,0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(14,165,233,0.12);
+        transition: all 0.3s ease;
     }
     .stChatInput textarea:focus {
-        border-color: rgba(14,165,233,0.5) !important;
-        background: rgba(15,23,42,0.8) !important;
-        animation: inputGlowPulse 2s ease infinite;
-        outline: none !important;
-    }
-    /* Send button */
-    .stChatInput button {
-        border-radius: 10px !important;
-        background: linear-gradient(135deg, #0ea5e9, #38bdf8) !important;
-        border: none !important;
-        transition: all 0.25s ease !important;
-        box-shadow: 0 2px 8px rgba(14,165,233,0.3) !important;
-    }
-    .stChatInput button:hover {
-        transform: scale(1.08) !important;
-        box-shadow: 0 4px 16px rgba(14,165,233,0.45) !important;
-    }
-    .stChatInput button:active {
-        transform: scale(0.96) !important;
+        border-color: rgba(14,165,233,0.4);
+        box-shadow:
+            0 0 0 3px rgba(14,165,233,0.1),
+            0 4px 16px rgba(14,165,233,0.08);
     }
 
     /* ══════════════════════════════════════════════════════════════════
@@ -1034,373 +957,6 @@ st.markdown("""
         div[data-testid="stVerticalBlock"] button[kind="secondary"] {
             min-height: 44px;
         }
-        /* Reduce backdrop blur on mobile for performance */
-        .stChatMessage, .af-example-card, .af-tool-card, .af-sidebar-section {
-            backdrop-filter: blur(8px) !important;
-            -webkit-backdrop-filter: blur(8px) !important;
-        }
-        /* Watermark smaller on mobile */
-        .stApp::before {
-            width: 95vw;
-            height: 40vh;
-            opacity: 0.05;
-        }
-    }
-
-    /* Tablet: 641px–900px */
-    @media (min-width: 641px) and (max-width: 900px) {
-        .af-header h1 {
-            font-size: 1.6rem;
-        }
-        .af-examples-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-        .af-tool-grid {
-            grid-template-columns: 1fr 1fr;
-        }
-        .block-container {
-            padding-left: 1.5rem !important;
-            padding-right: 1.5rem !important;
-        }
-    }
-
-    /* Touch devices: larger tap targets */
-    @media (hover: none) and (pointer: coarse) {
-        .af-pill, .af-tool-chip {
-            padding: 0.3rem 0.8rem !important;
-            font-size: 0.75rem !important;
-        }
-        .stChatInput textarea {
-            font-size: 16px !important; /* Prevents iOS auto-zoom on focus */
-        }
-        /* Disable hover-only animations on touch */
-        .af-example-card:hover,
-        .af-tool-card:hover,
-        .af-tool-chip:hover {
-            transform: none !important;
-        }
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       §11  GLASSMORPHISM DEPTH LAYER
-              Upgraded blur, layered shadows, inner-light border edge
-       ══════════════════════════════════════════════════════════════════ */
-
-    /* --- Chat bubbles: deeper glass + layered shadow --- */
-    .stChatMessage {
-        backdrop-filter: blur(20px) saturate(1.4) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
-        box-shadow:
-            0 4px 24px rgba(0,0,0,0.25),
-            inset 0 1px 0 rgba(255,255,255,0.06) !important;
-    }
-    .stChatMessage:has([data-testid="chatAvatarIcon-user"]) {
-        background: rgba(14,165,233,0.04) !important;
-        border-color: rgba(14,165,233,0.15) !important;
-    }
-    .stChatMessage:has([data-testid="chatAvatarIcon-assistant"]) {
-        background: rgba(16,185,129,0.04) !important;
-        border-color: rgba(16,185,129,0.15) !important;
-    }
-    .stChatMessage:hover {
-        box-shadow:
-            0 8px 32px rgba(0,0,0,0.3),
-            0 0 0 1px rgba(148,163,184,0.08),
-            inset 0 1px 0 rgba(255,255,255,0.09) !important;
-    }
-
-    /* --- Example cards: richer depth --- */
-    .af-example-card {
-        backdrop-filter: blur(18px) saturate(1.3) !important;
-        -webkit-backdrop-filter: blur(18px) saturate(1.3) !important;
-        box-shadow:
-            0 2px 16px rgba(0,0,0,0.2),
-            inset 0 1px 0 rgba(255,255,255,0.05) !important;
-    }
-    .af-example-card:hover {
-        box-shadow:
-            0 0 0 1px rgba(14,165,233,0.25),
-            0 12px 40px rgba(14,165,233,0.14),
-            inset 0 1px 0 rgba(255,255,255,0.09) !important;
-    }
-
-    /* --- Tool cards (sidebar): frosted + micro-elevation --- */
-    .af-tool-card {
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        box-shadow:
-            0 1px 8px rgba(0,0,0,0.18),
-            inset 0 1px 0 rgba(255,255,255,0.04) !important;
-    }
-    .af-tool-card:hover {
-        box-shadow:
-            0 4px 20px rgba(14,165,233,0.12),
-            inset 0 1px 0 rgba(255,255,255,0.07) !important;
-        transform: translateY(-1px);
-    }
-    .af-tool-card.af-bounty-card:hover {
-        box-shadow:
-            0 4px 20px rgba(251,191,36,0.12),
-            inset 0 1px 0 rgba(255,255,255,0.07) !important;
-    }
-
-    /* --- Sidebar section blocks --- */
-    .af-sidebar-section {
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        box-shadow:
-            0 2px 12px rgba(0,0,0,0.2),
-            inset 0 1px 0 rgba(255,255,255,0.05) !important;
-    }
-    .af-sidebar-section:hover {
-        box-shadow:
-            0 4px 24px rgba(14,165,233,0.1),
-            inset 0 1px 0 rgba(255,255,255,0.08) !important;
-    }
-
-    /* --- Metadata bar + verification badges --- */
-    .af-meta, .af-verification {
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        box-shadow:
-            0 1px 8px rgba(0,0,0,0.15),
-            inset 0 1px 0 rgba(255,255,255,0.04) !important;
-    }
-
-    /* --- Tool active chip (spinner) --- */
-    .af-tool-active {
-        backdrop-filter: blur(16px) !important;
-        box-shadow:
-            0 2px 12px rgba(14,165,233,0.15),
-            inset 0 1px 0 rgba(255,255,255,0.05) !important;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       §10b  FEEDBACK ICON BUTTONS — bounce + glow state transitions
-       ══════════════════════════════════════════════════════════════════ */
-    @keyframes thumbBounce {
-        0%   { transform: scale(1); }
-        30%  { transform: scale(1.35) rotate(-8deg); }
-        55%  { transform: scale(0.92) rotate(4deg); }
-        75%  { transform: scale(1.1) rotate(-2deg); }
-        100% { transform: scale(1) rotate(0deg); }
-    }
-    /* Feedback columns: shrink wrapper padding */
-    div[data-testid="stHorizontalBlock"] > div:first-child button,
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
-        background: rgba(15,23,42,0.5) !important;
-        border: 1px solid rgba(148,163,184,0.1) !important;
-        border-radius: 10px !important;
-        width: 36px !important;
-        height: 36px !important;
-        min-height: 36px !important;
-        padding: 0 !important;
-        font-size: 1rem !important;
-        line-height: 1 !important;
-        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-        backdrop-filter: blur(12px) !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:first-child button:hover {
-        background: rgba(74,222,128,0.1) !important;
-        border-color: rgba(74,222,128,0.3) !important;
-        box-shadow: 0 4px 14px rgba(74,222,128,0.2) !important;
-        transform: scale(1.12) !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button:hover {
-        background: rgba(248,113,113,0.1) !important;
-        border-color: rgba(248,113,113,0.3) !important;
-        box-shadow: 0 4px 14px rgba(248,113,113,0.2) !important;
-        transform: scale(1.12) !important;
-    }
-    div[data-testid="stHorizontalBlock"] > div:first-child button:active,
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button:active {
-        animation: thumbBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       §11  EXAMPLE CARD GRADIENT BORDER + SHINE SWEEP
-       ══════════════════════════════════════════════════════════════════ */
-    @keyframes cardShine {
-        0%   { background-position: -200% center; opacity: 0; }
-        10%  { opacity: 1; }
-        90%  { opacity: 1; }
-        100% { background-position: 200% center; opacity: 0; }
-    }
-    /* Gradient-border wrapper technique using pseudo-element */
-    .af-example-card::before {
-        content: "";
-        position: absolute;
-        inset: -1px;
-        border-radius: 15px;
-        background: linear-gradient(135deg,
-            rgba(14,165,233,0),
-            rgba(14,165,233,0.5),
-            rgba(139,92,246,0.3),
-            rgba(14,165,233,0)
-        );
-        background-size: 300% 300%;
-        z-index: -1;
-        opacity: 0;
-        transition: opacity 0.35s ease;
-    }
-    .af-example-card:hover::before {
-        opacity: 1;
-        animation: bgShift 3s ease infinite;
-    }
-    @keyframes bgShift {
-        0%   { background-position: 0% 50%; }
-        50%  { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    /* Shine streak on hover */
-    .af-example-card .af-example-shine {
-        position: absolute;
-        inset: 0;
-        border-radius: 14px;
-        background: linear-gradient(
-            105deg,
-            transparent 30%,
-            rgba(255,255,255,0.06) 50%,
-            transparent 70%
-        );
-        background-size: 200% 100%;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-    }
-    .af-example-card:hover .af-example-shine {
-        opacity: 1;
-        animation: cardShine 0.8s ease both;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       §11a  SIDEBAR POLISH — status indicator sonar, hover lift, metrics
-       ══════════════════════════════════════════════════════════════════ */
-    @keyframes sonarRing {
-        0%   { transform: scale(1);   opacity: 0.6; }
-        100% { transform: scale(2.8); opacity: 0; }
-    }
-    /* Status bar — frosted glass + sonar dot */
-    .af-sidebar-status {
-        backdrop-filter: blur(16px) !important;
-        box-shadow: 0 1px 8px rgba(74,222,128,0.08), inset 0 1px 0 rgba(255,255,255,0.04) !important;
-        transition: border-color 0.3s ease !important;
-        position: relative;
-    }
-    .af-sidebar-status:hover {
-        border-color: rgba(74,222,128,0.3) !important;
-        box-shadow: 0 2px 16px rgba(74,222,128,0.12), inset 0 1px 0 rgba(255,255,255,0.06) !important;
-    }
-    /* Sonar ring behind the live dot */
-    .af-sidebar-status .af-live-dot {
-        position: relative;
-    }
-    .af-sidebar-status .af-live-dot::after {
-        content: "";
-        position: absolute;
-        inset: -1px;
-        border-radius: 50%;
-        background: #4ade80;
-        animation: sonarRing 2s ease-out infinite;
-    }
-    /* Metrics: brighter values */
-    div[data-testid="stMetricValue"] {
-        background: linear-gradient(135deg, #e2e8f0, #7dd3fc);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       §11b  THINKING INDICATOR — three pulsing dots
-       ══════════════════════════════════════════════════════════════════ */
-    @keyframes dotBounce {
-        0%, 80%, 100% { transform: translateY(0);   opacity: 0.35; }
-        40%            { transform: translateY(-7px); opacity: 1; }
-    }
-    .af-thinking {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 0.65rem 1rem;
-        background: rgba(14,165,233,0.06);
-        border: 1px solid rgba(14,165,233,0.14);
-        border-radius: 12px;
-        backdrop-filter: blur(16px);
-        box-shadow: 0 2px 12px rgba(14,165,233,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
-        animation: fadeInUp 0.25s ease both;
-    }
-    .af-thinking-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #38bdf8;
-        letter-spacing: 0.04em;
-        margin-right: 4px;
-    }
-    .af-thinking-dot {
-        width: 6px; height: 6px;
-        border-radius: 50%;
-        background: #38bdf8;
-    }
-    .af-thinking-dot:nth-child(2) { animation: dotBounce 1.4s ease infinite 0s; }
-    .af-thinking-dot:nth-child(3) { animation: dotBounce 1.4s ease infinite 0.2s; }
-    .af-thinking-dot:nth-child(4) { animation: dotBounce 1.4s ease infinite 0.4s; }
-
-    /* ══════════════════════════════════════════════════════════════════
-       §12  ENTRANCE ANIMATIONS — header, sidebar sections, metadata
-       ══════════════════════════════════════════════════════════════════ */
-    @keyframes slideInLeft {
-        from { opacity: 0; transform: translateX(-16px); }
-        to   { opacity: 1; transform: translateX(0); }
-    }
-    @keyframes fadeInScale {
-        from { opacity: 0; transform: scale(0.96); }
-        to   { opacity: 1; transform: scale(1); }
-    }
-    @keyframes fadeInDown {
-        from { opacity: 0; transform: translateY(-10px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
-    /* Header fades in from above */
-    .af-header {
-        animation: fadeInDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-    }
-    /* Sidebar sections slide in from left, staggered */
-    .af-sidebar-section:nth-child(1) { animation: slideInLeft 0.4s ease both 0.05s; }
-    .af-sidebar-section:nth-child(2) { animation: slideInLeft 0.4s ease both 0.12s; }
-    .af-sidebar-section:nth-child(3) { animation: slideInLeft 0.4s ease both 0.19s; }
-    .af-sidebar-section:nth-child(4) { animation: slideInLeft 0.4s ease both 0.26s; }
-    .af-sidebar-section:nth-child(5) { animation: slideInLeft 0.4s ease both 0.33s; }
-    /* Tool cards in sidebar cascade in */
-    .af-tool-card:nth-child(1) { animation: fadeInUp 0.35s ease both 0.1s; }
-    .af-tool-card:nth-child(2) { animation: fadeInUp 0.35s ease both 0.17s; }
-    .af-tool-card:nth-child(3) { animation: fadeInUp 0.35s ease both 0.24s; }
-    .af-tool-card:nth-child(4) { animation: fadeInUp 0.35s ease both 0.31s; }
-    .af-tool-card:nth-child(5) { animation: fadeInUp 0.35s ease both 0.38s; }
-    .af-tool-card:nth-child(6) { animation: fadeInUp 0.35s ease both 0.45s; }
-    /* Metadata bar scales in after message lands */
-    .af-meta {
-        animation: fadeInScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both 0.2s;
-    }
-    .af-verification {
-        animation: fadeInScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both 0.3s;
-    }
-    /* Gauntlet badge slides in from bottom-right */
-    .af-gauntlet-badge {
-        animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both 0.8s;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       §99  HIDE STREAMLIT CHROME — footer and deploy btn only
-            NOTE: stToolbar and stHeader intentionally kept visible
-            so the sidebar hamburger toggle remains accessible
-       ══════════════════════════════════════════════════════════════════ */
-    footer { display: none !important; }
-    footer::after { display: none !important; }
-    .stDeployButton { display: none !important; }
-    /* Remove blank top padding Streamlit adds for the hidden header */
-    .block-container {
-        padding-top: 1rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1744,14 +1300,17 @@ def main():
             st.session_state.pending_example = cdr_question
             st.rerun()
 
+        cols = st.columns(2)
         for i, (icon, label, question) in enumerate(EXAMPLE_QUESTIONS):
-            if st.button(
-                f"{icon} {label} — {question}",
-                key=f"welcome_{i}",
-                use_container_width=True,
-            ):
-                st.session_state.pending_example = question
-                st.rerun()
+            col = cols[i % 2]
+            with col:
+                if st.button(
+                    f"{icon} **{label}**\n{question}",
+                    key=f"welcome_{i}",
+                    use_container_width=True,
+                ):
+                    st.session_state.pending_example = question
+                    st.rerun()
     else:
         # Display chat history
         for i, msg in enumerate(st.session_state.messages):
@@ -1794,38 +1353,31 @@ def _render_metadata(meta: dict, msg_index: int):
         gauge_cls = "af-conf-fill-low"
 
     # Build HTML metadata bar
-    SEP = '<span class="af-meta-sep"></span>'
-    pills_html = "".join(f'<span class="af-pill">⚡ {t}</span>' for t in tools)
+    pills_html = "".join(f'<span class="af-pill">{t}</span>' for t in tools)
     parts = []
     # Clinical Decision Report indicator for multi-tool responses
     if len(tools) >= 3:
         parts.append('<span class="af-pill-cdr">🏥 Clinical Decision Report</span>')
-        parts.append(SEP)
     if tools:
         parts.append(pills_html)
-        parts.append(SEP)
     conf_pct = int(confidence * 100)
     parts.append(
         f'<span class="af-conf-gauge"><span class="af-conf-fill {gauge_cls}" style="width:{conf_pct}%"></span></span>'
-        f'<span class="{conf_cls}">🎯 {confidence:.0%}</span>'
+        f'<span class="{conf_cls}">{confidence:.0%}</span>'
     )
     if latency:
-        parts.append(SEP)
-        parts.append(f'<span class="af-latency">⏱ {latency:.0f}ms</span>')
+        parts.append(f'<span class="af-latency">{latency:.0f}ms</span>')
     if sources:
-        parts.append(f"📎 {len(sources)} source{'s' if len(sources) != 1 else ''}")
+        parts.append(f"{len(sources)} source{'s' if len(sources) != 1 else ''}")
 
     # Data provenance badge — detect live API vs built-in database
     source_text = " ".join(str(s) for s in sources).lower() if sources else ""
     if "live" in source_text or "rxnorm api" in source_text or "openfda" in source_text:
-        parts.append(SEP)
-        parts.append('<span class="af-pill" style="background:rgba(16,185,129,0.2);color:#10b981;border-color:rgba(16,185,129,0.3)">🟢 Live API</span>')
+        parts.append('<span class="af-pill" style="background:rgba(16,185,129,0.2);color:#10b981;border-color:rgba(16,185,129,0.3)">Live API</span>')
     elif "built-in" in source_text or "agentforge" in source_text or "curated" in source_text:
-        parts.append(SEP)
-        parts.append('<span class="af-pill" style="background:rgba(245,158,11,0.2);color:#f59e0b;border-color:rgba(245,158,11,0.3)">📦 Built-in Data</span>')
+        parts.append('<span class="af-pill" style="background:rgba(245,158,11,0.2);color:#f59e0b;border-color:rgba(245,158,11,0.3)">Built-in Data</span>')
     elif sources:
-        parts.append(SEP)
-        parts.append('<span class="af-pill" style="background:rgba(99,102,241,0.2);color:#818cf8;border-color:rgba(99,102,241,0.3)">✓ Verified Source</span>')
+        parts.append('<span class="af-pill" style="background:rgba(99,102,241,0.2);color:#818cf8;border-color:rgba(99,102,241,0.3)">Verified Source</span>')
 
     st.markdown(
         f'<div class="af-meta">{" ".join(parts)}</div>',
@@ -1985,43 +1537,61 @@ def _process_message(message: str):
         st.markdown(message)
 
     with st.chat_message("assistant"):
-        _thinking = st.empty()
-        _thinking.markdown(
-            '<div class="af-thinking">'
-            '<span class="af-thinking-label">Thinking</span>'
-            '<span class="af-thinking-dot"></span>'
-            '<span class="af-thinking-dot"></span>'
-            '<span class="af-thinking-dot"></span>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-        result = send_message(message)
-        _thinking.empty()
+        # Try streaming first, fall back to non-streaming
+        try:
+            full_text = st.write_stream(_stream_message(message))
+            meta = st.session_state.pop("_stream_metadata", {})
 
-        if result:
-            st.markdown(result["response"])
-            meta = {
-                "tools_used": result.get("tools_used", []),
-                "confidence": result.get("confidence", 0),
-                "sources": result.get("sources", []),
-                "trace_id": result.get("trace_id", ""),
-                "latency_ms": result.get("latency_ms", 0),
-                "tokens": result.get("tokens", {}),
-                "verification": result.get("verification", {}),
-            }
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": result["response"],
-                "metadata": meta,
-            })
-            _render_metadata(meta, len(st.session_state.messages) - 1)
-        else:
-            error_msg = (
-                "I wasn't sure how to process that request. Could you try rephrasing? "
-                "For example, try asking about specific symptoms, medications, or providers."
-            )
-            st.markdown(error_msg)
-            st.session_state.messages.append({"role": "assistant", "content": error_msg})
+            if meta:
+                result_meta = {
+                    "tools_used": meta.get("tools_used", []),
+                    "confidence": meta.get("confidence", 0),
+                    "sources": meta.get("sources", []),
+                    "trace_id": meta.get("trace_id", ""),
+                    "latency_ms": meta.get("latency_ms", 0),
+                    "tokens": meta.get("tokens", {}),
+                    "verification": meta.get("verification", {}),
+                }
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": full_text,
+                    "metadata": result_meta,
+                })
+                _render_metadata(result_meta, len(st.session_state.messages) - 1)
+            else:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": full_text,
+                })
+        except Exception:
+            # Fall back to non-streaming
+            with st.spinner("Analyzing your query..."):
+                result = send_message(message)
+
+            if result:
+                st.markdown(result["response"])
+                meta = {
+                    "tools_used": result.get("tools_used", []),
+                    "confidence": result.get("confidence", 0),
+                    "sources": result.get("sources", []),
+                    "trace_id": result.get("trace_id", ""),
+                    "latency_ms": result.get("latency_ms", 0),
+                    "tokens": result.get("tokens", {}),
+                    "verification": result.get("verification", {}),
+                }
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": result["response"],
+                    "metadata": meta,
+                })
+                _render_metadata(meta, len(st.session_state.messages) - 1)
+            else:
+                error_msg = (
+                    "I wasn't sure how to process that request. Could you try rephrasing? "
+                    "For example, try asking about specific symptoms, medications, or providers."
+                )
+                st.markdown(error_msg)
+                st.session_state.messages.append({"role": "assistant", "content": error_msg})
 
 
 if __name__ == "__main__":
